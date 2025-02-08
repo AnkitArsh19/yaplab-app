@@ -22,7 +22,7 @@ public class Message {
     private User sender;
 
     //Keeps the track of receiver, can be null for group messages
-    @ManyToOne
+    @ManyToOne(optional = true)
     @JoinColumn(name = "receiverID")
     private User receiver;
 
@@ -55,7 +55,7 @@ public class Message {
     private MessageStatus messageStatus;
 
     //Stores the id the message for replying feature
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "replyTo_id")
     private Message replyTo;
 

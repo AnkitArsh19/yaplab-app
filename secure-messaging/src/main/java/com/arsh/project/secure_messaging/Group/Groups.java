@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "Group")
+@Table(name = "group_table")
 public class Groups {
 
     //Generates unique id for each group created to store in the database
@@ -20,11 +20,12 @@ public class Groups {
     private String name;
 
     //Stores the details of the user who created the group
-    @Column(name = "createdBy")
+    @ManyToOne
+    @JoinColumn(name = "createdBy")
     private User createdBy;
 
     //Many_to_many relationship. Stores the list of users in the group.
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
             name = "group_users",
             joinColumns = @JoinColumn(name = "group_id"),

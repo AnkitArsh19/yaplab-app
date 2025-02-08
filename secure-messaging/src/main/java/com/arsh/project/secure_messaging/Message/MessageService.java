@@ -36,7 +36,7 @@ public class MessageService {
 
     public List<Message> getMessageOfGroups(Groups group){
 
-        return messageRepo.findByGroups(group);
+        return messageRepo.findByGroup(group);
     }
 
     public void updateMessageStatus(Long id, MessageStatus status){

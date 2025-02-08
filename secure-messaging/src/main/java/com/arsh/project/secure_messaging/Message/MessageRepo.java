@@ -12,5 +12,5 @@ public interface MessageRepo extends JpaRepository<Message, Long> {
     //Fetches the list of messages between the specific sender and receiver
     List<Message> findBySenderAndReceiver(User sender, User receiver);
     //Fetches the list of messages in the specific group
-    List<Message> findByGroups(Groups group);
+    List<Message> findByGroup(Groups group);
 }
