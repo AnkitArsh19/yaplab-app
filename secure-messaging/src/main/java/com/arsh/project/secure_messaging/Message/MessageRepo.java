@@ -1,5 +1,6 @@
 package com.arsh.project.secure_messaging.Message;
 
+import com.arsh.project.secure_messaging.Group.Groups;
 import com.arsh.project.secure_messaging.User.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

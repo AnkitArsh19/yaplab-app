@@ -1,4 +1,5 @@
 package com.arsh.project.secure_messaging.Message;
+import com.arsh.project.secure_messaging.Group.Groups;
 import com.arsh.project.secure_messaging.User.User;
 import com.arsh.project.secure_messaging.enums.MessageStatus;
 import com.arsh.project.secure_messaging.enums.MessageType;
@@ -21,7 +22,7 @@ public class MessageMapper {
         return toPersonal;
     }
 
-    public Message toGroup(User sender,Groups name, String content){
+    public Message toGroup(User sender, Groups name, String content){
 
         Message toGroup = new Message();
         toGroup.setSender(sender);

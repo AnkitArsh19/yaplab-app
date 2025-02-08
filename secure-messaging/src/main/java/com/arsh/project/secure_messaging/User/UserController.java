@@ -31,7 +31,7 @@ public class UserController {
 
     @GetMapping("/user/{id}")
     public User getUserFromId(
-            @PathVariable Integer id){
+            @PathVariable Long id){
         return this.userService.getUserByID(id);
     }
 
@@ -50,7 +50,7 @@ public class UserController {
 
     @DeleteMapping("/user/{id}")
     public ResponseEntity<Void> deleteUser(
-            @PathVariable Integer id){
+            @PathVariable Long id){
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }

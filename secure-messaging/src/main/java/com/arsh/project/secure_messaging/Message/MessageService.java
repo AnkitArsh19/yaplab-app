@@ -1,5 +1,6 @@
 package com.arsh.project.secure_messaging.Message;
 
+import com.arsh.project.secure_messaging.Group.Groups;
 import com.arsh.project.secure_messaging.User.User;
 import com.arsh.project.secure_messaging.enums.MessageStatus;
 import org.springframework.stereotype.Service;
@@ -22,10 +23,10 @@ public class MessageService {
         messageRepo.save(message);
     }
 
-    public void sendGroupMessage(User sender,Groups group, String content){
+    public void sendGroupMessage(User sender, Groups group, String content){
 
-        Message message = messageMapper.toGroup(sender, group, content);
-        messageRepo.save(message);
+        Message groupmessage = messageMapper.toGroup(sender, group, content);
+        messageRepo.save(groupmessage);
     }
 
     public List<Message> getMessageBetweenUsers(User sender, User receiver){

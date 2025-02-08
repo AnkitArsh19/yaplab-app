@@ -1,4 +1,4 @@
-package com.arsh.project.secure_messaging.Message;
+package com.arsh.project.secure_messaging.Group;
 import com.arsh.project.secure_messaging.User.User;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;

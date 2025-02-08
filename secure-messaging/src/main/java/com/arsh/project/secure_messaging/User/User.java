@@ -11,7 +11,7 @@ public class User {
     @Id
     //Generate new primary key for new id's by auto incrementing
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
     //A new user should have a username and other details that are mandatory and cannot be null
     @Column(name = "username", nullable = false)
     private String userName;
@@ -27,7 +27,8 @@ public class User {
     }
 
     //Parameterized constructor
-    public User(Integer id, String userName, String emailId, String mobileNo, String password) {
+
+    public User(Long id, String userName, String emailId, String mobileNo, String password) {
         this.id = id;
         this.userName = userName;
         this.emailId = emailId;
@@ -38,11 +39,12 @@ public class User {
 
     //Getters and Setters for returning the details and setting the details for the private fields
 
-    public Integer getId() {
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

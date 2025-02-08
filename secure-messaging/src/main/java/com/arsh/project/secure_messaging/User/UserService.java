@@ -23,7 +23,7 @@ public class UserService {
     }
 
     //Will be needed for messaging features and user lookup
-    public User getUserByID(Integer id){
+    public User getUserByID(Long id){
         return userRepository.findById(id)
                 .orElse(null);//Returns null if the user is not found
     }
@@ -55,7 +55,7 @@ public class UserService {
 
 
     //Removes the user from database for privacy and storage management
-    public void deleteUser(Integer id){
+    public void deleteUser(Long id){
         if (userRepository.existsById(id))//Finds if user is available for the given ID
             userRepository.deleteById(id);
         else

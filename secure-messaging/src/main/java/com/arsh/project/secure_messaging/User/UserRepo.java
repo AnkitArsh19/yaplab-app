@@ -7,7 +7,7 @@ import java.util.Optional;
 
 @Repository
 //Repository interface for database interactions
-public interface UserRepo extends JpaRepository<User, Integer> {
+public interface UserRepo extends JpaRepository<User, Long> {
     //findBy method defined to use in the service layer. Will automatically generate SQL query.
     Optional<User> findByEmailId(String emailId); //Method name matches the field
 }
