@@ -1,0 +1,27 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# IntelliJ IDEA files
+.idea/
+*.iml
+/out/
+
+# Build files and folders (if using Maven or Gradle)
+target/
+build/
+*.war
+*.ear
+*.zip
+
+# OS-related files
+.DS_Store
+
+# Logs and temporary files
+*.log
+tmp/
+
+# Executables
+*.exe
+
+# Sensitive information (if any - be very careful with this)
+config.properties  # Or any file containing passwords, API keys, etc.
