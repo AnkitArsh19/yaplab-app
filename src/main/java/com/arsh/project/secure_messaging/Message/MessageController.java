@@ -11,9 +11,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST Controller for handling messaging operations.
+ * Provides endpoints for sending, retrieving, updating, and deleting messages.
+ */
 @RestController
 @RequestMapping("/message")
 public class MessageController {
+
+    /**
+     * Constructor based dependency injection of Message Service, User Service, Group Service.
+     */
     private final MessageService messageService;
     private final UserService userService;
     private final GroupService groupService;
@@ -24,6 +32,13 @@ public class MessageController {
         this.groupService = groupService;
     }
 
+    /**
+     * Sends a personal message between two users.
+     * @param senderId   ID of the sender.
+     * @param receiverId ID of the receiver.
+     * @param content    Message content.
+     * @return ResponseEntity indicating success or failure.
+     */
     @PostMapping("/personal")
     public ResponseEntity<String> personalMessage(
             @RequestParam Long senderId,
@@ -39,6 +54,14 @@ public class MessageController {
         return ResponseEntity.ok("The message was sent.");
     }
 
+    /**
+     * Sends a message in a group.
+     *
+     * @param senderId   ID of the sender.
+     * @param groupId    ID of the group.
+     * @param content    Message content.
+     * @return ResponseEntity indicating success or failure.
+     */
     @PostMapping("/group")
     public ResponseEntity<String> groupMessage(
             @RequestParam Long senderId,
@@ -54,6 +77,13 @@ public class MessageController {
         return ResponseEntity.ok("The message was sent to the group.");
     }
 
+    /**
+     * Returns list of messages between two users.
+     *
+     * @param senderId   ID of the sender.
+     * @param receiverId ID of the receiver.
+     * @return ResponseEntity with a list of messages or an empty entity.
+     */
     @GetMapping("/personal/{senderId}/{receiverId}")
     public ResponseEntity<List<Message>> getPersonalMessageList(
             @PathVariable Long senderId,
@@ -69,6 +99,12 @@ public class MessageController {
         return ResponseEntity.ok(messages);
     }
 
+    /**
+     * Returns list of messages between two users.
+     *
+     * @param groupId   ID of the group.
+     * @return ResponseEntity with a list of messages or an empty entity.
+     */
     @GetMapping("/group/{groupId}")
     public ResponseEntity<List<Message>> getGroupMessageList(
             @PathVariable Long groupId
@@ -82,6 +118,13 @@ public class MessageController {
         return ResponseEntity.ok(messages);
     }
 
+    /**
+     * Updates the status of message to sent,read,delivered.
+     *
+     * @param messageId  ID of the message.
+     * @param status    new status of the message.
+     * @return ResponseEntity with a response of successful updation.
+     */
     @PatchMapping("/{messageId}/status/{status}")
     public ResponseEntity<String> updateMessageStatus(
             @PathVariable Long messageId,
@@ -91,6 +134,12 @@ public class MessageController {
         return ResponseEntity.ok("Status Updated to " + status);
     }
 
+    /**
+     * Soft deletes a message.
+     *
+     * @param messageId ID of the message.
+     * @return ResponseEntity with no content.
+     */
     @DeleteMapping("/{messageId}")
     public ResponseEntity<Void> deleteMessage(
             @PathVariable Long messageId

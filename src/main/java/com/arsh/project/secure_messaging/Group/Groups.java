@@ -6,25 +6,40 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Group entity to store group_id, name, created_by, set of users, etc.
+ */
 @Entity
 @Table(name = "group_table")
 public class Groups {
 
-    //Generates unique id for each group created to store in the database
+    /**
+     * Unique identifier for each group which is assigned automatically.
+     * Long is preferred for large datasets.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    //Stores the required group name for each group
+    /**
+     * The name of the group (cannot be null).
+     */
     @Column(name = "Group_name", nullable = false)
     private String name;
 
-    //Stores the details of the user who created the group
+    /**
+     * The creator of the group (cannot be null).
+     */
     @ManyToOne
-    @JoinColumn(name = "createdBy")
+    @JoinColumn(name = "createdBy", nullable = false)
     private User createdBy;
 
-    //Many_to_many relationship. Stores the list of users in the group.
+    /**
+     * A group can have many users and a user can be in many groups.
+     * CascadeType is used to prevent unintended deletions and ensures changes propagate.
+     * FetchType.Lazy ensures users are loaded only when required.
+     * Hashset ensures unique users in the group.
+     */
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
             name = "group_users",
@@ -33,17 +48,22 @@ public class Groups {
     )
     private Set<User> users = new HashSet<>();
 
-
-    // Timestamp when the group was created
+    /**
+     * Timestamp of when group was created.
+     */
     @Column(name = "createdAt", updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    //Default constructor
+    /**
+     * Default constructor.
+     */
     public Groups() {
     }
 
-    //Parameterized constructor
+    /**
+     * Parameterized constructor.
+     */
     public Groups(Integer id, String name, User createdBy, Set<User> users, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
@@ -52,7 +72,9 @@ public class Groups {
         this.createdAt = createdAt;
     }
 
-    //Getters and setters
+    /**
+     * Getters and setters.
+     */
     public Integer getId() {
         return id;
     }

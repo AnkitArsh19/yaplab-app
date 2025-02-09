@@ -7,63 +7,92 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
+/**
+ * Message entity to store id, sender_id, receiver_id, content, message_type, message_status, etc.
+ */
 @Entity
-@Table(name = "Message")
+@Table(name = "message")
 public class Message {
 
-    //Needs unique id for retrieval and tracking. Long is preferred for large datasets.
+    /**
+     * Unique identifier for each message which is assigned automatically.
+     * Long is preferred for large datasets.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    //Keeps a track of who sent the message
+    /**
+     * The sender of the message (cannot be null).
+     */
     @ManyToOne
-    @JoinColumn(name = "senderID", nullable = false)
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    //Keeps the track of receiver, can be null for group messages
+    /**
+     * The receiver of the message (nullable for group messages).
+     */
     @ManyToOne(optional = true)
-    @JoinColumn(name = "receiverID")
+    @JoinColumn(name = "receiver_id")
     private User receiver;
 
-    //Stores group info for group messages
-    @ManyToOne
+    /**
+     * The group to which the message belongs (cannot be null).
+     */
+    @ManyToOne(optional = true)
     @JoinColumn(name = "group_id")
     private Groups group;
 
-    //Stores the content of the message in string format
+    /**
+     * Content of the message in text format.
+     */
     @Column(nullable = false)
     private String content;
 
-    //Stores the type of message which can be different in different situations like text, images, audio, video
+    /**
+     * Type of the message. Can be Text, Image, Audio, Video.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageType messageType;
 
-    //Stores the exact time for the message sent
+    /**
+     * Timestamp of when message was created.
+     */
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime timestamp;
 
-    //Soft delete option to delete messages but with an option to recover deleted messages
+    /**
+     * Soft delete flag to allow message recovery.
+     */
     @Column(nullable = false)
     private Boolean softDeleted = false;
 
-    //Stores the current status for the message sent like sent, read or delivered
+    /**
+     * Status of the message. Can be Sent, Delivered, Read.
+     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageStatus messageStatus;
 
-    //Stores the id the message for replying feature
+    /**
+     * If this message is a reply, it stores the referenced message
+     * Cascade is used to avoid unintended deletions.
+     */
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "replyTo_id")
     private Message replyTo;
 
-    //Default Constructor
+    /**
+     * Default Constructor.
+     */
     public Message() {
     }
 
-    // One-to-One Message Constructor for personal chats
+    /**
+     * One-to-One Message Constructor for personal chats
+     */
     public Message(User sender, User receiver, String content, MessageType messageType,
                    MessageStatus messageStatus, Message replyTo) {
         this.sender = sender;
@@ -74,7 +103,9 @@ public class Message {
         this.replyTo = replyTo;
     }
 
-    // Group Message Constructor for group messages
+    /**
+     * Constructor for group messages
+     */
     public Message(User sender, Groups group, String content, MessageType messageType,
                    MessageStatus messageStatus, Message replyTo) {
         this.sender = sender;
@@ -85,9 +116,9 @@ public class Message {
         this.replyTo = replyTo;
     }
 
-    //Getters and setters
-
-
+    /**
+     *  Getters and setters
+     */
     public Long getId() {
         return id;
     }

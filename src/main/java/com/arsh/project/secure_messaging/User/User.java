@@ -2,31 +2,54 @@ package com.arsh.project.secure_messaging.User;
 
 import jakarta.persistence.*;
 
-//Create an Entity for users to store their login details
+/**
+ * User entity to store user details like username, email ID, mobile number and password.
+ */
 @Entity
-//Table for the list of registered users
-@Table(name = "User_details")
+@Table(name = "user_details")
 public class User {
 
+    /**
+     * Unique identifier for each user which is assigned automatically.
+     * Long is preferred for large datasets.
+     */
     @Id
-    //Generate new primary key for new id's by auto incrementing
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    //A new user should have a username and other details that are mandatory and cannot be null
+
+    /**
+     * The name of the user (cannot be null).
+     */
     @Column(name = "username", nullable = false)
     private String userName;
+
+    /**
+     * The emailId of the user (cannot be null and is unique for all users).
+     */
     @Column(name = "email_id", unique = true, nullable = false)
     private String emailId;
+
+    /**
+     * The mobile no. of the user (cannot be null and is unique for all users).
+     */
     @Column(name = "MobileNo", unique = true, nullable = false)
     private String mobileNo;
+
+    /**
+     * The password of the account (cannot be null).
+     */
     @Column(name = "password", nullable = false)
     private String password;
 
-    //Default constructor
+    /**
+     *Default constructor.
+     */
     public User() {
     }
 
-    //Parameterized constructor
+    /**
+     * Parameterized constructor.
+     */
 
     public User(Long id, String userName, String emailId, String mobileNo, String password) {
         this.id = id;
@@ -37,9 +60,9 @@ public class User {
     }
 
 
-    //Getters and Setters for returning the details and setting the details for the private fields
-
-
+    /**
+     *  Getters and Setters for returning the details and setting the details for the private fields
+     */
     public Long getId() {
         return id;
     }

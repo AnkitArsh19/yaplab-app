@@ -4,12 +4,16 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST Controller for handling user operations.
+ * Provides endpoints for registering, finding, updating and deleting users.
+ */
 @RestController
 public class UserController {
 
-    /** Constructs a new UserController, injecting the UserService dependency.
-     * The UserService handles user-related business logic, such as creating, retrieving,
-     * updating, and deleting user accounts.**/
+    /**
+     * Constructor based dependency injection of User Service.
+     */
     private final UserService userService;
 
     public UserController(UserService userService) {
@@ -17,11 +21,10 @@ public class UserController {
     }
 
 
-    /*
+    /**
      * Registers a new user.
-     * Accepts user details in the request body and creates a new user account.
-     * The user details to register (validated using @Valid).
-     * Will help hashing the password
+     * @param userDetails Details of the user in a body.
+     * returns the user registered and saved in the database.
      */
     @PostMapping("/user/register")
     public User postUser(
@@ -29,18 +32,33 @@ public class UserController {
         return this.userService.registerUser(userDetails);
     }
 
+    /**
+     * Finds user from id.
+     * @param id ID of the user.
+     * @return the user entity of that ID.
+     */
     @GetMapping("/user/{id}")
     public User getUserFromId(
             @PathVariable Long id){
         return this.userService.getUserByID(id);
     }
 
+    /**
+     * Finds user by emailID.
+     * @param email emailID of the user.
+     * @return the user entity of that emailID.
+     */
     @GetMapping("/user/email")
     public User getUserFromEmail(
             @RequestParam String email){
         return this.userService.getUserByEmail(email);
     }
 
+    /**
+     * Update user details with the details given in body.
+     * @param userDetails details that needs to be updated
+     * @return the User entity with updated details.
+     */
     @PutMapping("/user/update")
     public User updateDetails(
             @Valid @RequestBody User userDetails
@@ -48,6 +66,11 @@ public class UserController {
         return this.userService.updateUser(userDetails);
     }
 
+    /**
+     * Deletes a user from the database
+     * @param id ID of the user
+     * @return ResponseEntity with no content.
+     */
     @DeleteMapping("/user/{id}")
     public ResponseEntity<Void> deleteUser(
             @PathVariable Long id){

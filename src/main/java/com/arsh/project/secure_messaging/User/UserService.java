@@ -1,45 +1,61 @@
 package com.arsh.project.secure_messaging.User;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-//Service layer user service for management of users
+/**
+ * Service layer for handling user-related operations such as registration, finding user by id or email, update details, etc.
+ */
 @Service
 public class UserService {
 
+    private final UserRepository userRepository;
 
-    private final UserRepo userRepository;
-
-    public UserService(UserRepo userRepository) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    /*
-     * Registers a new user.
-     * Accepts user details and creates a new user account.
-     * Will help hashing the password
+    /**
+     * Registers a new user and saves to the database.
+     * @param user The user entity to register.
+     * @return saved user.
      */
     public User registerUser(User user){
+
         return userRepository.save(user);
     }
 
-    //Will be needed for messaging features and user lookup
+    /**
+     * Gets the user by the given ID.
+     * @param id ID of the user.
+     * @return The User of that id or null if user is not found
+     */
     public User getUserByID(Long id){
         return userRepository.findById(id)
-                .orElse(null);//Returns null if the user is not found
+                .orElse(null);
     }
 
+    /**
+     * Gets the user by the given emailID for recovery purpose.
+     * @param emailId EmailId of the user.
+     * @throws RuntimeException if user is not found.
+     * @return the User found.
+     */
     public User getUserByEmail(String emailId){
         return userRepository.findByEmailId(emailId)
-                .orElseThrow(()-> new RuntimeException("User not found with the emailID" + emailId));//Returns null if the user is not found
+                .orElseThrow(()-> new RuntimeException("User not found with the emailID" + emailId));
     }
 
-    //users need an option to update profile
+    /**
+     * Updates the required details of the user and saves in the database.
+     * @param updatedUser The updated user to save details to.
+     * @throws RuntimeException if user is not found.
+     * @return the old user with updated details.
+     */
     public User updateUser(User updatedUser){
-        //Retrieve the existing user details
         User oldUser = userRepository.findById(updatedUser.getId())
                 .orElseThrow(() -> new RuntimeException("User not found with the id" + updatedUser.getId()));
 
-        //Update the required details
         if (updatedUser.getUserName()!=null)
             oldUser.setUserName(updatedUser.getUserName());
         if (updatedUser.getEmailId()!=null)
@@ -49,14 +65,17 @@ public class UserService {
         if (updatedUser.getPassword()!=null)
             oldUser.setPassword(updatedUser.getPassword());
 
-        //Save the details to the old user
         return userRepository.save(oldUser);
     }
 
 
-    //Removes the user from database for privacy and storage management
+    /**
+     * Deletes the user from the database for privacy and storage management.
+     * @param id ID of the user to delete.
+     * @throws RuntimeException if user is not found.
+     */
     public void deleteUser(Long id){
-        if (userRepository.existsById(id))//Finds if user is available for the given ID
+        if (userRepository.existsById(id))
             userRepository.deleteById(id);
         else
             throw new RuntimeException("User not found with ID: " + id);
