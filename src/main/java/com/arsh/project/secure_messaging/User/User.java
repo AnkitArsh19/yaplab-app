@@ -1,6 +1,9 @@
 package com.arsh.project.secure_messaging.User;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * User entity to store user details like username, email ID, mobile number and password.
@@ -30,10 +33,10 @@ public class User {
     private String emailId;
 
     /**
-     * The mobile no. of the user (cannot be null and is unique for all users).
+     * The mobile number of the user (cannot be null and is unique for all users).
      */
-    @Column(name = "MobileNo", unique = true, nullable = false)
-    private String mobileNo;
+    @Column(name = "mobile_number", unique = true, nullable = false)
+    private String mobileNumber;
 
     /**
      * The password of the account (cannot be null).
@@ -42,7 +45,24 @@ public class User {
     private String password;
 
     /**
-     *Default constructor.
+     * New field to track if the user's email is verified.
+     */
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    /**
+     * New timestamp fields for auditing.
+     */
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    /**
+     * Default constructor.
      */
     public User() {
     }
@@ -51,11 +71,11 @@ public class User {
      * Parameterized constructor.
      */
 
-    public User(Long id, String userName, String emailId, String mobileNo, String password) {
+    public User(Long id, String userName, String emailId, String mobileNumber, String password) {
         this.id = id;
         this.userName = userName;
         this.emailId = emailId;
-        this.mobileNo = mobileNo;
+        this.mobileNumber = mobileNumber;
         this.password = password;
     }
 
@@ -87,12 +107,12 @@ public class User {
         this.emailId = emailId;
     }
 
-    public String getMobileNo() {
-        return mobileNo;
+    public String getMobileNumber() {
+        return mobileNumber;
     }
 
-    public void setMobileNo(String mobileNo) {
-        this.mobileNo = mobileNo;
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
     }
 
     public String getPassword() {
@@ -101,5 +121,21 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }

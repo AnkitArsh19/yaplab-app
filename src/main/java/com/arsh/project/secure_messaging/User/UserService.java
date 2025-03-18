@@ -1,6 +1,4 @@
 package com.arsh.project.secure_messaging.User;
-
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 /**
@@ -23,6 +21,21 @@ public class UserService {
     public User registerUser(User user){
 
         return userRepository.save(user);
+    }
+
+    /**
+     * Login a user to his existing account.
+     * @param emailId The emailI of the user.
+     * @param loginPassword The password of the user.
+     * @return saved user.
+     */
+    public User loginUser(String emailId, String loginPassword){
+        User activeUser = getUserByEmail(emailId);
+        if(activeUser.getPassword().equals(loginPassword)){
+            return activeUser;
+        }
+        else
+            throw new RuntimeException("Please enter correct password");
     }
 
     /**
@@ -60,8 +73,8 @@ public class UserService {
             oldUser.setUserName(updatedUser.getUserName());
         if (updatedUser.getEmailId()!=null)
             oldUser.setEmailId(updatedUser.getEmailId());
-        if (updatedUser.getMobileNo()!=null)
-            oldUser.setMobileNo(updatedUser.getMobileNo());
+        if (updatedUser.getMobileNumber()!=null)
+            oldUser.setMobileNumber(updatedUser.getMobileNumber());
         if (updatedUser.getPassword()!=null)
             oldUser.setPassword(updatedUser.getPassword());
 

@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * REST Controller for handling user operations.
  * Provides endpoints for registering, finding, updating and deleting users.
@@ -23,13 +25,25 @@ public class UserController {
 
     /**
      * Registers a new user.
-     * @param userDetails Details of the user in a body.
+     * @param newUserDetails Details of the user in a body.
      * returns the user registered and saved in the database.
      */
-    @PostMapping("/user/register")
-    public User postUser(
-            @Valid @RequestBody User userDetails){
-        return this.userService.registerUser(userDetails);
+    @PostMapping("/register")
+    public User postNewUser(
+            @Valid @RequestBody User newUserDetails){
+        return this.userService.registerUser(newUserDetails);
+    }
+
+    /**
+     * Login an existing user.
+     * @param loginData Login data of the registered user.
+     * returns the user registered and saved in the database.
+     */
+    @PostMapping("/login")
+    public User loginUser(@RequestBody Map<String, String> loginData) {
+        String emailId = loginData.get("emailId");
+        String loginPassword = loginData.get("password");
+        return userService.loginUser(emailId, loginPassword);
     }
 
     /**
