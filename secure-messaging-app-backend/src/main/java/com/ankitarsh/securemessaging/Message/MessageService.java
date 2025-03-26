@@ -1,12 +1,10 @@
 package com.ankitarsh.securemessaging.Message;
 
 import com.ankitarsh.securemessaging.ChatRoom.ChatRoom;
-import com.ankitarsh.securemessaging.ChatRoom.ChatRoomDTO;
 import com.ankitarsh.securemessaging.ChatRoom.ChatRoomService;
 import com.ankitarsh.securemessaging.Group.Group;
 import com.ankitarsh.securemessaging.Group.GroupService;
 import com.ankitarsh.securemessaging.User.User;
-import com.ankitarsh.securemessaging.User.UserMapper;
 import com.ankitarsh.securemessaging.User.UserService;
 import com.ankitarsh.securemessaging.enums.MessageStatus;
 import org.springframework.stereotype.Service;

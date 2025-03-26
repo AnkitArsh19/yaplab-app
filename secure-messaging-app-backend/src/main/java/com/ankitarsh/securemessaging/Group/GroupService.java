@@ -4,7 +4,6 @@ package com.ankitarsh.securemessaging.Group;
 import com.ankitarsh.securemessaging.User.User;
 import com.ankitarsh.securemessaging.User.UserRepository;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -29,11 +28,6 @@ public class GroupService {
      * Finds details of group from the id.
      * @param id  The id of the group.
      */
-    public GroupResponseDTO getGroupById(Long id){
-        return groupMapper.toGroupResponseDTO(groupRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("Group not found")));
-    }
-
     public Group getGroupEntity(Long id){
         return groupRepository.findById(id)
                 .orElseThrow(()-> new RuntimeException("Group not found"));

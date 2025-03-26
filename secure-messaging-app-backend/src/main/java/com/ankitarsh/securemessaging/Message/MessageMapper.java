@@ -6,7 +6,6 @@ import com.ankitarsh.securemessaging.User.User;
 import com.ankitarsh.securemessaging.enums.MessageStatus;
 import com.ankitarsh.securemessaging.enums.MessageType;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
 
 /**
  * Service layer to map messages.

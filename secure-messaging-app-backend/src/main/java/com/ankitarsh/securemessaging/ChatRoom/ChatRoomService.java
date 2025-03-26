@@ -1,7 +1,6 @@
 package com.ankitarsh.securemessaging.ChatRoom;
 
 import com.ankitarsh.securemessaging.Group.Group;
-import com.ankitarsh.securemessaging.Group.GroupRepository;
 import com.ankitarsh.securemessaging.Group.GroupService;
 import com.ankitarsh.securemessaging.Message.MessageResponseDTO;
 import com.ankitarsh.securemessaging.User.User;

@@ -4,7 +4,6 @@ import com.ankitarsh.securemessaging.Group.Group;
 import com.ankitarsh.securemessaging.Group.GroupResponseDTO;
 import com.ankitarsh.securemessaging.User.User;
 import com.ankitarsh.securemessaging.User.UserResponseDTO;
-import com.ankitarsh.securemessaging.enums.ChatRoomType;
 import org.springframework.stereotype.Service;
 import java.util.Set;
 import java.util.stream.Collectors;
