@@ -1,10 +1,7 @@
 package com.ankitarsh.securemessaging.Group;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for handling group operations.
@@ -24,17 +21,16 @@ public class GroupController {
     }
 
     /**
-     * Creates a group with the given name in parameter.
+     * Creates a group with the given userName in parameter.
      * @param createdById ID of the user creating the group.
-     * @param groupName Name of the new group.
      * @return Response Entity of a created group.
      */
     @PostMapping("/create")
-    public ResponseEntity<Groups> createGroup(
-            @RequestParam Long createdById,
-            @RequestParam String groupName
+    public ResponseEntity<GroupResponseDTO> createGroup(
+            @RequestBody GroupDTO groupDTO,
+            @RequestParam Long createdById
     ){
-        return ResponseEntity.ok(groupService.createGroup(groupName, createdById));
+        return ResponseEntity.ok(groupService.createGroup(groupDTO, createdById));
     }
 
     /**

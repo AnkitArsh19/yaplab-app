@@ -1,4 +1,4 @@
-package com.ankitarsh.securemessaging;
+package com.ankitarsh.securemessaging.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

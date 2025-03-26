@@ -1,20 +1,18 @@
 package com.ankitarsh.securemessaging.Message;
 
-import com.ankitarsh.securemessaging.Group.GroupService;
-import com.ankitarsh.securemessaging.Group.Groups;
-import com.ankitarsh.securemessaging.User.User;
-import com.ankitarsh.securemessaging.User.UserService;
 import com.ankitarsh.securemessaging.enums.MessageStatus;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 /**
  * REST Controller for handling messaging operations.
  * Provides endpoints for sending, retrieving, updating, and deleting messages.
  */
+@Controller
 @RestController
 @RequestMapping("/message")
 public class MessageController {
@@ -23,58 +21,32 @@ public class MessageController {
      * Constructor based dependency injection of Message Service, User Service, Group Service.
      */
     private final MessageService messageService;
-    private final UserService userService;
-    private final GroupService groupService;
 
-    public MessageController(MessageService messageService, UserService userService, GroupService groupService) {
+    public MessageController(
+            MessageService messageService) {
         this.messageService = messageService;
-        this.userService = userService;
-        this.groupService = groupService;
     }
 
     /**
      * Sends a personal message between two users.
-     * @param senderId   ID of the sender.
-     * @param receiverId ID of the receiver.
-     * @param content    Message content.
      * @return ResponseEntity indicating success or failure.
      */
-    @PostMapping("/personal")
-    public ResponseEntity<String> personalMessage(
-            @RequestParam Long senderId,
-            @RequestParam Long receiverId,
-            @RequestParam String content
+    @MessageMapping("/personal")
+    @GetMapping("/topic/messages")
+    public MessageResponseDTO personalMessage(
+            @Payload MessageDTO messageDTO
     ){
-        User sender = userService.getUserByID(senderId);
-        User receiver = userService.getUserByID(receiverId);
-        if(sender == null || receiver == null){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-        }
-        messageService.sendPersonalMessage(sender, receiver, content);
-        return ResponseEntity.ok("The message was sent.");
+        return messageService.sendPersonalMessage(messageDTO);
     }
-
     /**
      * Sends a message in a group.
-     *
-     * @param senderId   ID of the sender.
-     * @param groupId    ID of the group.
-     * @param content    Message content.
      * @return ResponseEntity indicating success or failure.
      */
-    @PostMapping("/group")
-    public ResponseEntity<String> groupMessage(
-            @RequestParam Long senderId,
-            @RequestParam Long groupId,
-            @RequestParam String content
+    @MessageMapping("/group")
+    public MessageResponseDTO groupMessage(
+            @Payload MessageDTO messageDTO
     ){
-        User sender = userService.getUserByID(senderId);
-        Groups group = groupService.getGroupById(groupId);
-        if(!group.getUsers().contains(sender)) {
-            throw new RuntimeException("User is not the member of this group");
-        }
-        messageService.sendGroupMessage(sender, group, content);
-        return ResponseEntity.ok("The message was sent to the group.");
+        return messageService.sendGroupMessage(messageDTO);
     }
 
     /**
@@ -85,13 +57,11 @@ public class MessageController {
      * @return ResponseEntity with a list of messages or an empty entity.
      */
     @GetMapping("/personal/{senderId}/{receiverId}")
-    public ResponseEntity<List<Message>> getPersonalMessageList(
+    public ResponseEntity<List<MessageResponseDTO>> getPersonalMessageList(
             @PathVariable Long senderId,
             @PathVariable Long receiverId
     ){
-        User sender = userService.getUserByID(senderId);
-        User receiver = userService.getUserByID(receiverId);
-        List<Message> messages = messageService.getMessageBetweenUsers(sender, receiver);
+        List<MessageResponseDTO> messages = messageService.getMessageBetweenUsers(senderId, receiverId);
         if(messages.isEmpty()){
             return ResponseEntity.noContent().build();
         }
@@ -106,11 +76,10 @@ public class MessageController {
      * @return ResponseEntity with a list of messages or an empty entity.
      */
     @GetMapping("/group/{groupId}")
-    public ResponseEntity<List<Message>> getGroupMessageList(
+    public ResponseEntity<List<MessageResponseDTO>> getGroupMessageList(
             @PathVariable Long groupId
     ){
-        Groups group = groupService.getGroupById(groupId);
-        List<Message> messages = messageService.getMessageOfGroups(group);
+        List<MessageResponseDTO> messages = messageService.getMessageOfGroups(groupId);
         if(messages.isEmpty()){
             return ResponseEntity.noContent().build();
         }
@@ -123,7 +92,7 @@ public class MessageController {
      *
      * @param messageId  ID of the message.
      * @param status    new status of the message.
-     * @return ResponseEntity with a response of successful updation.
+     * @return ResponseEntity with a response of successful update.
      */
     @PatchMapping("/{messageId}/status/{status}")
     public ResponseEntity<String> updateMessageStatus(
@@ -136,7 +105,6 @@ public class MessageController {
 
     /**
      * Soft deletes a message.
-     *
      * @param messageId ID of the message.
      * @return ResponseEntity with no content.
      */

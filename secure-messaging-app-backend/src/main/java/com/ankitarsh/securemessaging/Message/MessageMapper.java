@@ -1,11 +1,11 @@
 package com.ankitarsh.securemessaging.Message;
 
-import com.ankitarsh.securemessaging.Group.Groups;
+import com.ankitarsh.securemessaging.ChatRoom.ChatRoom;
+import com.ankitarsh.securemessaging.Group.Group;
 import com.ankitarsh.securemessaging.User.User;
 import com.ankitarsh.securemessaging.enums.MessageStatus;
 import com.ankitarsh.securemessaging.enums.MessageType;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 
 /**
@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
  */
 @Service
 public class MessageMapper {
+
     /**
      * Maps the parameters to a message entity for personal messages
      * @param sender   The sender of the message.
@@ -20,36 +21,28 @@ public class MessageMapper {
      * @param content  The content of the message.
      * @return The message entity with desired attributes.
      */
-    public Message toPersonal(User sender, User receiver, String content) {
-
-        Message toPersonal = new Message();
-        toPersonal.setSender(sender);
-        toPersonal.setReceiver(receiver);
-        toPersonal.setContent(content);
-        toPersonal.setMessageType(MessageType.TEXT);
-        toPersonal.setSoftDeleted(false);
-        toPersonal.setMessageStatus(MessageStatus.SENT);
-        toPersonal.setTimestamp(LocalDateTime.now());
-        return toPersonal;
+    public Message createPersonalMessage(ChatRoom chatroom, User sender, User receiver, String content) {
+        return new Message(chatroom, sender, receiver, content, MessageType.TEXT, MessageStatus.SENT, null);
     }
 
     /**
      * Maps the parameters to a message entity group messages
      * @param sender   The sender of the message.
-     * @param name     The name of the group.
+     * @param group    The userName of the group.
      * @param content  The content of the message.
      * @return The message entity with desired attributes.
      */
-    public Message toGroup(User sender, Groups name, String content){
+    public Message createGroupMessage(ChatRoom chatroom, User sender, Group group, String content) {
+        return new Message(chatroom, sender, group, content, MessageType.TEXT, MessageStatus.SENT, null);
+    }
 
-        Message toGroup = new Message();
-        toGroup.setSender(sender);
-        toGroup.setGroup(name);
-        toGroup.setContent(content);
-        toGroup.setMessageType(MessageType.TEXT);
-        toGroup.setSoftDeleted(false);
-        toGroup.setMessageStatus(MessageStatus.SENT);
-        toGroup.setTimestamp(LocalDateTime.now());
-        return toGroup;
+    public MessageResponseDTO toResponseDTO(Message message){
+        return new MessageResponseDTO(
+                message.getId(),
+                message.getSender().getUserName(),
+                message.getContent(),
+                message.getTimestamp(),
+                message.getMessageStatus()
+        );
     }
 }

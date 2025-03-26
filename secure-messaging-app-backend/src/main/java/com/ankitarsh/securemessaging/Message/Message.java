@@ -1,6 +1,7 @@
 package com.ankitarsh.securemessaging.Message;
 
-import com.ankitarsh.securemessaging.Group.Groups;
+import com.ankitarsh.securemessaging.ChatRoom.ChatRoom;
+import com.ankitarsh.securemessaging.Group.Group;
 import com.ankitarsh.securemessaging.User.User;
 import com.ankitarsh.securemessaging.enums.MessageStatus;
 import com.ankitarsh.securemessaging.enums.MessageType;
@@ -24,6 +25,13 @@ public class Message {
     private Long id;
 
     /**
+     * The chatroom this message belongs to.
+     */
+    @ManyToOne
+    @JoinColumn(name = "chatroom_id", nullable = false)
+    private ChatRoom chatroom;
+
+    /**
      * The sender of the message (cannot be null).
      */
     @ManyToOne
@@ -38,11 +46,11 @@ public class Message {
     private User receiver;
 
     /**
-     * The group to which the message belongs (cannot be null).
+     * The group to which the message belongs (nullable for personal messages).
      */
     @ManyToOne(optional = true)
     @JoinColumn(name = "group_id")
-    private Groups group;
+    private Group group;
 
     /**
      * Content of the message in text format.
@@ -94,8 +102,9 @@ public class Message {
     /**
      * One-to-One Message Constructor for personal chats
      */
-    public Message(User sender, User receiver, String content, MessageType messageType,
+    public Message(ChatRoom chatroom, User sender, User receiver, String content, MessageType messageType,
                    MessageStatus messageStatus, Message replyTo) {
+        this.chatroom = chatroom;
         this.sender = sender;
         this.receiver = receiver;
         this.content = content;
@@ -107,8 +116,9 @@ public class Message {
     /**
      * Constructor for group messages
      */
-    public Message(User sender, Groups group, String content, MessageType messageType,
+    public Message(ChatRoom chatroom, User sender, Group group, String content, MessageType messageType,
                    MessageStatus messageStatus, Message replyTo) {
+        this.chatroom = chatroom;
         this.sender = sender;
         this.group = group;
         this.content = content;
@@ -144,11 +154,11 @@ public class Message {
         this.receiver = receiver;
     }
 
-    public Groups getGroup() {
+    public Group getGroup() {
         return group;
     }
 
-    public void setGroup(Groups group) {
+    public void setGroup(Group group) {
         this.group = group;
     }
 
@@ -168,12 +178,20 @@ public class Message {
         this.messageType = messageType;
     }
 
-    public LocalDateTime getTimestamp(){
+    public LocalDateTime getTimestamp() {
         return timestamp;
     }
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public ChatRoom getChatroom() {
+        return chatroom;
+    }
+
+    public void setChatroom(ChatRoom chatroom) {
+        this.chatroom = chatroom;
     }
 
     public Boolean getSoftDeleted() {

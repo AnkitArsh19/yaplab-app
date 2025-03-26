@@ -1,12 +1,13 @@
 package com.ankitarsh.securemessaging.User;
 
+import com.ankitarsh.securemessaging.enums.UserStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /**
- * User entity to store user details like username, email ID, mobile number and password.
+ * User entity to store user details like userName, email ID, mobile number and password.
  */
 @Entity
 @Table(name = "user_details")
@@ -21,9 +22,9 @@ public class User {
     private Long id;
 
     /**
-     * The name of the user (cannot be null).
+     * The userName of the user (cannot be null).
      */
-    @Column(name = "username", nullable = false)
+    @Column(name = "userName", nullable = false)
     private String userName;
 
     /**
@@ -57,9 +58,18 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * Updated timestamp field.
+     */
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    /**
+     * Status of the user(ONLINE or OFFLINE).
+     */
+    @Column(name = "user_status")
+    private UserStatus status;
 
     /**
      * Default constructor.
@@ -80,9 +90,11 @@ public class User {
     }
 
 
-    /**
+     /**
      *  Getters and Setters for returning the details and setting the details for the private fields
      */
+
+
     public Long getId() {
         return id;
     }
@@ -137,5 +149,13 @@ public class User {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(UserStatus status) {
+        this.status = status;
     }
 }

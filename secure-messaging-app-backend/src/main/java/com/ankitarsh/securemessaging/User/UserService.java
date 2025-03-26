@@ -1,7 +1,12 @@
 package com.ankitarsh.securemessaging.User;
+import com.ankitarsh.securemessaging.Authentication.LoginRequestDTO;
+import com.ankitarsh.securemessaging.Authentication.LoginResponseDTO;
+import com.ankitarsh.securemessaging.Authentication.RegisterRequestDTO;
+import com.ankitarsh.securemessaging.enums.UserStatus;
 import org.springframework.stereotype.Service;
-
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service layer for handling user-related operations such as registration, finding user by id or email, update details, etc.
@@ -10,37 +15,47 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
     /**
      * Registers a new user and saves to the database.
-     * @param user The user entity to register.
      * @return saved user.
      */
-    public User registerUser(User user){
+    public UserResponseDTO registerUser(RegisterRequestDTO registerRequestDTO){
+        User user = userMapper.toEntityFromRegisterRequest(registerRequestDTO);
         Optional<User> userExists = userRepository.findByEmailId(user.getEmailId());
         if(userExists.isPresent()) {
-            throw new RuntimeException("User already exists with the given email id");
+            throw new IllegalArgumentException("User already exists with the given email id");
         }
-        return userRepository.save(user);
+        user.setStatus(UserStatus.OFFLINE);
+        userRepository.save(user);
+        return userMapper.toResponseDTO(user);
     }
 
     /**
      * Login a user to his existing account.
-     * @param emailId The emailI of the user.
-     * @param loginPassword The password of the user.
      * @return saved user.
      */
-    public User loginUser(String emailId, String loginPassword){
-        User activeUser = getUserByEmail(emailId);
-        if(activeUser.getPassword().equals(loginPassword)){
-            return activeUser;
+    public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO){
+        User user = userRepository.findByEmailId(loginRequestDTO.emailId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if(!user.getPassword().equals(loginRequestDTO.password())) {
+            throw new IllegalArgumentException("Please enter correct password");
         }
-        else
-            throw new RuntimeException("Please enter correct password");
+        user.setStatus(UserStatus.ONLINE);
+        return userMapper.toLoginResponseDTO(user);
+    }
+
+    public void disconnect(Long userId){
+        userRepository.findById(userId).ifPresent(user -> {
+                user.setStatus(UserStatus.OFFLINE);
+                userRepository.save(user);
+        });
     }
 
     /**
@@ -48,42 +63,55 @@ public class UserService {
      * @param id ID of the user.
      * @return The User of that id or null if user is not found
      */
-    public User getUserByID(Long id){
+    public UserResponseDTO getUserByID(Long id){
+        return userMapper.toResponseDTO(userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found")));
+    }
+
+    public User getUserEntityByID(Long id){
         return userRepository.findById(id)
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
     /**
-     * Gets the user by the given emailID for recovery purpose.
+     * Gets the user by the given emailId for recovery purpose.
      * @param emailId EmailId of the user.
      * @throws RuntimeException if user is not found.
      * @return the User found.
      */
-    public User getUserByEmail(String emailId){
-        return userRepository.findByEmailId(emailId)
-                .orElseThrow(()-> new RuntimeException("User not found with the emailID" + emailId));
+    public UserResponseDTO getUserByEmail(String emailId){
+        return userMapper.toResponseDTO(userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with the emailId: " + emailId)));
     }
 
     /**
      * Updates the required details of the user and saves in the database.
-     * @param updatedUser The updated user to save details to.
+     * @param userDTO The updated user to save details to.
      * @throws RuntimeException if user is not found.
      * @return the old user with updated details.
      */
-    public User updateUser(User updatedUser){
-        User oldUser = userRepository.findById(updatedUser.getId())
-                .orElseThrow(() -> new RuntimeException("User not found with the id" + updatedUser.getId()));
+    public UserResponseDTO updateUser(UserDTO userDTO) {
+        User oldUser = userRepository.findById(userDTO.id())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with the id" + userDTO.id()));
 
-        if (updatedUser.getUserName()!=null)
-            oldUser.setUserName(updatedUser.getUserName());
-        if (updatedUser.getEmailId()!=null)
-            oldUser.setEmailId(updatedUser.getEmailId());
-        if (updatedUser.getMobileNumber()!=null)
-            oldUser.setMobileNumber(updatedUser.getMobileNumber());
-        if (updatedUser.getPassword()!=null)
-            oldUser.setPassword(updatedUser.getPassword());
+        if (userDTO.emailId() != null && !userDTO.emailId().equals(oldUser.getEmailId())) {
+            userRepository.findByEmailId(userDTO.emailId())
+                    .ifPresent(user -> {
+                            throw new IllegalArgumentException("Email already in use");
+                    });
+        }
+        if (userDTO.userName()!=null)
+            oldUser.setUserName(userDTO.userName());
+        if (userDTO.emailId()!=null)
+            oldUser.setEmailId(userDTO.emailId());
+        if (userDTO.mobileNumber()!=null)
+            oldUser.setMobileNumber(userDTO.mobileNumber());
+        if (userDTO.password()!=null)
+            oldUser.setPassword(userDTO.password());
+        User updatedUser = userMapper.toEntityFromDTO(userDTO);
+        updatedUser.setId(oldUser.getId());
 
-        return userRepository.save(oldUser);
+        return userMapper.toResponseDTO(userRepository.save(oldUser));
     }
 
 
@@ -93,11 +121,18 @@ public class UserService {
      * @throws RuntimeException if user is not found.
      */
     public void deleteUser(Long id){
-        if (userRepository.existsById(id))
-            userRepository.deleteById(id);
-        else
-            throw new RuntimeException("User not found with ID: " + id);
+        if (!userRepository.existsById(id)){
+            throw new IllegalArgumentException("User not found with ID: " + id);
+        }
+        userRepository.deleteById(id);
+
     }
 
+    public List<UserResponseDTO> findConnectedUsers(){
+        return userRepository.findByStatus(UserStatus.ONLINE)
+                .stream()
+                .map(userMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
 
 }

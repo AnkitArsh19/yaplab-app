@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
  * Extends JPARepository to perform CRUD operations.
  */
 @Repository
-public interface GroupRepository extends JpaRepository<Groups, Long>{
+public interface GroupRepository extends JpaRepository<Group, Long>{
 }

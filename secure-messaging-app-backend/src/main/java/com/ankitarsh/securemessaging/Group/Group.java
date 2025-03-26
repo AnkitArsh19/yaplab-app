@@ -8,11 +8,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Group entity to store group_id, name, created_by, set of users, etc.
+ * Group entity to store group_id, userName, created_by, set of users, etc.
  */
 @Entity
 @Table(name = "group_table")
-public class Groups {
+public class Group {
 
     /**
      * Unique identifier for each group which is assigned automatically.
@@ -20,10 +20,10 @@ public class Groups {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     /**
-     * The name of the group (cannot be null).
+     * The userName of the group (cannot be null).
      */
     @Column(name = "Group_name", nullable = false)
     private String name;
@@ -59,13 +59,13 @@ public class Groups {
     /**
      * Default constructor.
      */
-    public Groups() {
+    public Group() {
     }
 
     /**
      * Parameterized constructor.
      */
-    public Groups(Integer id, String name, User createdBy, Set<User> users, LocalDateTime createdAt) {
+    public Group(Long id, String name, User createdBy, Set<User> users, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
         this.createdBy = createdBy;
@@ -76,11 +76,11 @@ public class Groups {
     /**
      * Getters and setters.
      */
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

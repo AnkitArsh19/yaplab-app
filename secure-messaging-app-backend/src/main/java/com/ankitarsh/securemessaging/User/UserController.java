@@ -1,15 +1,21 @@
 package com.ankitarsh.securemessaging.User;
 
+import com.ankitarsh.securemessaging.Authentication.LoginRequestDTO;
+import com.ankitarsh.securemessaging.Authentication.LoginResponseDTO;
+import com.ankitarsh.securemessaging.Authentication.RegisterRequestDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * REST Controller for handling user operations.
  * Provides endpoints for registering, finding, updating and deleting users.
  */
+@Controller
 @RestController
 public class UserController {
 
@@ -28,22 +34,35 @@ public class UserController {
      * @param newUserDetails Details of the user in a body.
      * returns the user registered and saved in the database.
      */
-    @PostMapping("/register")
-    public User postNewUser(
-            @Valid @RequestBody User newUserDetails){
+
+    @MessageMapping("/user.addUser")
+    @SendTo("/user/topic")
+    public UserResponseDTO postNewUser(
+            @Payload RegisterRequestDTO newUserDetails){
         return this.userService.registerUser(newUserDetails);
+    }
+
+
+    @MessageMapping("/user.disconnectUser")
+    @SendTo("/user/topic")
+    public Void disconnectUser(
+            @Payload Long userId){
+        UserResponseDTO user = userService.getUserByID(userId);
+        userService.disconnect(userId);
+        return null;
     }
 
     /**
      * Login an existing user.
-     * @param loginData Login data of the registered user.
      * returns the user registered and saved in the database.
      */
     @PostMapping("/login")
-    public User loginUser(@RequestBody Map<String, String> loginData) {
-        String emailId = loginData.get("emailId");
-        String loginPassword = loginData.get("password");
-        return userService.loginUser(emailId, loginPassword);
+    public ResponseEntity<LoginResponseDTO> loginUser(
+            @RequestBody LoginRequestDTO loginRequest) {
+        String emailId = loginRequest.emailId();
+        String loginPassword = loginRequest.password();
+        LoginResponseDTO response = userService.loginUser(loginRequest);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -52,20 +71,22 @@ public class UserController {
      * @return the user entity of that ID.
      */
     @GetMapping("/user/{id}")
-    public User getUserFromId(
+    public ResponseEntity<UserResponseDTO> getUserFromId(
             @PathVariable Long id){
-        return this.userService.getUserByID(id);
+        UserResponseDTO responseDTO = userService.getUserByID(id);
+        return ResponseEntity.ok(responseDTO);
     }
 
     /**
-     * Finds user by emailID.
-     * @param email emailID of the user.
-     * @return the user entity of that emailID.
+     * Finds user by emailId.
+     * @param email emailId of the user.
+     * @return the user entity of that emailId.
      */
     @GetMapping("/user/email")
-    public User getUserFromEmail(
+    public ResponseEntity<UserResponseDTO> getUserFromEmail(
             @RequestParam String email){
-        return this.userService.getUserByEmail(email);
+        UserResponseDTO responseDTO = userService.getUserByEmail(email);
+        return ResponseEntity.ok(responseDTO);
     }
 
     /**
@@ -74,10 +95,11 @@ public class UserController {
      * @return the User entity with updated details.
      */
     @PutMapping("/user/update")
-    public User updateDetails(
-            @Valid @RequestBody User userDetails
+    public ResponseEntity<UserResponseDTO> updateDetails(
+            @Valid @RequestBody UserDTO userDetails
     ){
-        return this.userService.updateUser(userDetails);
+       UserResponseDTO responseDTO = userService.updateUser(userDetails);
+       return ResponseEntity.ok(responseDTO);
     }
 
     /**
@@ -88,6 +110,7 @@ public class UserController {
     @DeleteMapping("/user/{id}")
     public ResponseEntity<Void> deleteUser(
             @PathVariable Long id){
+        userService.disconnect(id);
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
