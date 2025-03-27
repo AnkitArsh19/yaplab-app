@@ -8,6 +8,7 @@ import com.ankitarsh.securemessaging.User.UserRepository;
 import com.ankitarsh.securemessaging.User.UserService;
 import com.ankitarsh.securemessaging.enums.ChatRoomType;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,9 +34,9 @@ public class ChatRoomService {
             Long receiverID) {
         User sender = userService.getUserEntityByID(senderID);
         User receiver = userService.getUserEntityByID(receiverID);
-        Optional<ChatRoom> existingChatRoom = chatRoomRepository.findPersonalChatRoomID(sender, receiver);
+        Optional<ChatRoom> existingChatRoom = chatRoomRepository.findByParticipantsContainingAndChatroomType(sender, ChatRoomType.PERSONAL);
         if (existingChatRoom.isEmpty()) {
-            existingChatRoom = chatRoomRepository.findPersonalChatRoomID(receiver, sender);  // Check the reversed order
+            existingChatRoom = chatRoomRepository.findByParticipantsContainingAndChatroomType(receiver, ChatRoomType.PERSONAL);  // Check the reversed order
         }
         if (existingChatRoom.isPresent()){
             return existingChatRoom.get().getChatroomId();
@@ -48,7 +49,7 @@ public class ChatRoomService {
     public String getOrCreateGroupChatRoomId(
         Long groupID){
         Group group = groupService.getGroupEntity(groupID);
-        return chatRoomRepository.findGroupChatRoomID(group)
+        return chatRoomRepository.findByGroupAndChatroomType(group, ChatRoomType.GROUP)
                 .map(ChatRoom::getChatroomId)
                 .orElse("group_" + group.getId());
     }
@@ -144,6 +145,5 @@ public class ChatRoomService {
         chatRoom.setLastActivity(LocalDateTime.now());
         chatRoomMapper.chatRoomResponseDTO(chatRoomRepository.save(chatRoom));
     }
-
 }
 

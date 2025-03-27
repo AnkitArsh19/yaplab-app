@@ -2,7 +2,9 @@ package com.ankitarsh.securemessaging.User;
 
 import com.ankitarsh.securemessaging.Authentication.LoginResponseDTO;
 import com.ankitarsh.securemessaging.Authentication.RegisterRequestDTO;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UserMapper {
 
     public User toEntityFromDTO(UserDTO userDTO){
