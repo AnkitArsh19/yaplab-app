@@ -13,8 +13,10 @@ function AuthPage(){
     
     
     const [error, setError] = useState(null);    
+    const [isLoading, setIsLoading] = useState(false);
     const [isLogin, setIsLogin] = useState(true);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [showPassword, setShowPassword]= useState(false);
 
     function changeLogin(){
         setIsLogin((prevIsLogin) => !prevIsLogin)
@@ -30,11 +32,42 @@ function AuthPage(){
         }
     };
 
+    const validateMobile = (mobileNumber) => {
+        return /^\d{10}$/.test(mobileNumber);
+    }
+
+
     const handleSubmitForm = async (e) => {
         e.preventDefault();
-        setIsSubmitted(false);
+        setIsSubmitted(true);
         setError(null);
-        try{
+
+        if(isLogin) {
+            if (!logInDetails.emailId || !logInDetails.password){
+                setError("Please fill all the fields.");
+                return;
+            }
+        }
+        else
+        {
+            if (
+                !signUpDetails.userName ||
+                !signUpDetails.emailId ||
+                !signUpDetails.mobileNumber ||
+                !signUpDetails.password
+            ){
+                setError("Please fill all the fields.");
+                return;
+            }
+
+            if(!validateMobile(signUpDetails.mobileNumber)){
+                setError("Mobile number must be a 10-digit number");
+                return;
+            }
+        }
+        setIsLoading(true);
+        try
+        {
             let response;
             if(isLogin){
                 response = await fetch("http://localhost:8080/login",{
@@ -59,11 +92,16 @@ function AuthPage(){
             const data = await response.json();
             if(response.ok){
                 setIsSubmitted(true);
+            } else {
+                setError(data.message || "Authentication failed.")
             }
         } catch(error){
-            setError("Network error");
-            console.error(error);
+            setError("Network error or unable to connect to server.");
+            console.error("Fetch error",error);
+        } finally {
+            setIsLoading(false);
         }
+
     };    
 
     return(
@@ -83,7 +121,6 @@ function AuthPage(){
                                     type="text" 
                                     className="input_username" 
                                     placeholder="Enter your name" 
-                                    required
                                     name="userName"
                                     value={signUpDetails.userName}
                                     onChange={handleChange}
@@ -97,7 +134,6 @@ function AuthPage(){
                             className="input_emailid" 
                             placeholder="Enter your Email Id" 
                             name="emailId"
-                            required
                             value={isLogin ? logInDetails.emailId : signUpDetails.emailId}
                             onChange={handleChange}
                         />
@@ -106,35 +142,46 @@ function AuthPage(){
                         {!isLogin && (
                             <>
                                 <input
-                                    type="number" 
+                                    type="text" 
                                     className="input_mobilenumber" 
                                     placeholder="Enter your Mobile Number" 
                                     name="mobileNumber"
                                     value={signUpDetails.mobileNumber}
                                     onChange={handleChange}
-                                    required
                                 />
                                 <br/>
                             </>
                         )}
-
-                        <input
-                            type="password" 
-                            className="input_password" 
-                            placeholder="Enter Password" 
-                            required
-                            name="password"
-                            value={isLogin ? logInDetails.password : signUpDetails.password}
-                            onChange={handleChange}
-                        />
+                        <div className="passwordfield">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                className="input_password" 
+                                placeholder="Enter Password" 
+                                name="password"
+                                value={isLogin ? logInDetails.password : signUpDetails.password}
+                                onChange={handleChange}
+                            />
+                            <img 
+                                className="eye" 
+                                src="eye.png" 
+                                alt="seePassword" 
+                                onClick={() => setShowPassword((prev) => !prev)}/>
+                        </div>
                         <br/>
 
-                        <button className="submitButton" type="submit" onClick={handleSubmitForm}>
-                            {!isLogin ? "Sign Up" : "Login"}
+                        <button 
+                            className="submitButton" 
+                            type="submit" 
+                            disabled={isLoading}>
+                            {isLoading ? "...Loading" : !isLogin ? "Sign Up" : "Login"}
                         </button>
-                        {error && <p>{error}</p>}
+                        {isSubmitted  && error && <p className="error-message">{error}</p>}
+                        {isSubmitted && !isLoading && !error && <p className="success-message">Success!</p> }
                         <p>{!isLogin ? "Already have an account?" : "Don't have an account?"}</p>
-                        <button className="toggleLogIn" onClick={changeLogin}>
+                        <button 
+                        className="toggleLogIn"
+                        type="button"
+                        onClick={changeLogin}>
                             {!isLogin ? "Log In" : "Sign up"}
                         </button>
                     </form>                    

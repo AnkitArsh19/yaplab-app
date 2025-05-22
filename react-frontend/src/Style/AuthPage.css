@@ -17,19 +17,20 @@
 
 .Form{
     width: 300px;
-    height: 407px;
+    height: 450px;
     text-align: left;
-    background-color: #E7EBEE;
+    background-color: #aea29c;
     padding: 40px;
     align-items: center;
     justify-content: center;
+    color: #1a3033;
     box-shadow: 4px 20px 20px rgba(0, 0, 0, 0.2);    
 }
 
 .image-container{
-    background-color: #C0C6C9;
-    height: 487px;
-    width: 400px;
+    background-color: #D3CED0;
+    height: 530px;
+    width: auto;
     display: flex;
     align-items: center;
     justify-content: center;  
@@ -44,9 +45,24 @@
 }
 
 .shape{
-    width: 400px;
+    width: auto;
+    height: 530px;
     transform: scale(1.2);
     animation: zoomInOut 3s ease-in-out infinite alternate;
+}
+
+.passwordfield{
+    position: relative;
+    width: 200px;
+    display: inline-block;
+}
+
+.eye{
+    position: absolute;
+    right: 0px;
+    top: 40%;
+    max-height: 20px;
+    cursor: pointer;
 }
 
 @keyframes zoomInOut {
@@ -69,34 +85,37 @@
     padding: 10px;
     margin-top: 10px;
     width: 200px;
+    height: 20px;
+    background-color: #D3CED0;
     
 }
 
 .submitButton{
-    background-color: #C0C6C9;
+    background-color: #D3CED0;
     border: none;
     border-radius: 30px;
-    padding: 8px;
+    padding: 9px;
     margin-top: 20px;
     cursor: pointer;
     font-size: 0.9em;
-    
+    height: 40px;
+    width: 80px;    
 }
 
 .toggleLogIn{
-    background-color: #E7EBEE;
+    background: none;
     cursor: pointer;
     border: none; 
-    color: hsl(71, 36%, 50%);
+    color: #DD7155;
     font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
     font-size: 1.1em;
     margin-left: -6px;
 }
 
 .submitButton:hover{
-    background-color: #8c9398a6;
+    background-color: #fdf6f9;
 }
 
 .toggleLogIn:hover{
-    color: #8c9398;
+    color: #943735;
 }

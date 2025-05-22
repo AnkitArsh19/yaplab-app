@@ -15,6 +15,7 @@ useEffect(() => {
         <>
             <div className='chatwindow'>
                 <div className='Userlistarea'>
+                    <p className='chatTitle'>Chats</p>
                     <form className='searchUser'>
                         <input className='searchfield' placeholder='Search'>
                         </input>

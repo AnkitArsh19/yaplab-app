@@ -5,21 +5,40 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: "Bold";
+    src: url("./assets/fonts/Bold.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 html, body {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
-    overflow: hidden; /* Prevent scrolling */
+    overflow: hidden;
 }
 .chatwindow{
     display: flex;
     position: relative;
     flex-direction: row;
     width: 100vw;
-    height: 100vh;
-    margin: 10px;
+    height: 100vh;    
+    align-items: center;
+    justify-content: center;
+    box-shadow: #2d2f2f;
 
+}
+
+.chatTitle{
+    font-size: 20px;
+    text-align: center;    
+    font-weight: bold;
+    border-bottom: 2px solid black;
+    width: 100%;
+    padding-bottom: 10px;
+    font-family: 'Bold', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 .Userlistarea{
@@ -27,18 +46,17 @@ html, body {
     position: relative;
     flex-direction: column;
     background-color: #d2dce4a6;
-    border: 2px solid #2d2f2f;
-    border-radius: 25px;
-    width: 35%;
-    height: 95%; 
-    overflow-y: auto;
+    width: 30%;
+    height: 90%;
+    overflow: hidden;
+    box-shadow: #2d2f2f;
+    align-items: left;
 }
 
 .searchfield{
-    margin: 5px;
+    margin: 10px;
     height: 20px;
-    width: 93%;
-    border-radius: 20px;
+    width: 90%;
     padding: 10px;
     font-size: medium;
     font-family: 'Regular', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
@@ -46,12 +64,9 @@ html, body {
 
 .userInfoList{
     display: flex;
-    margin: 5px;
-    width: 93%;
+    width: 90%;
     align-items: center;
     padding-left: 15px;
-    border-radius: 20px;
-    border: 1px solid black;
     font-family: 'Regular', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 
 }
@@ -66,12 +81,10 @@ html, body {
 }
 
 .chatareacontainer{
-    margin-left: 15px;
     display: flex;
     flex-direction: column;
-    width: 63%; 
-    height: 95%; 
-    margin-left: 10px;
+    width: 60%; 
+    height: 90%;
 }
 
 .chatArea {
@@ -79,8 +92,6 @@ html, body {
     position: relative;
     flex-direction: column;
     background-color: #d2dce4a6;
-    border: 2px solid #2d2f2f;
-    border-radius: 25px;  
     padding: 10px;
     height: 100%;
 
@@ -89,14 +100,10 @@ html, body {
 .userInfo{
     display: flex;
     background-color: hsl(180, 3%, 56%);
-    margin: 2px;
-    margin-bottom: 5px;
     min-width: 460px;
     align-items: center;
-    border-radius: 25px;
     padding-left: 15px;
     font-family: 'Regular', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-    border: 1.5px solid black;
 }
 
 .messageContainer{
