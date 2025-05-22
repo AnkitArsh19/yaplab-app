@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="1f89a906-4ef1-4a53-9ec5-19eb05ac907a" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Security/AppUserDetailsService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/public/shapes.png" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/public/shapes.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/src/App.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/Components/AuthPage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/src/Components/AuthPage.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/Components/ChatWindow.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/src/Components/ChatWindow.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/Style/AuthPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/src/Style/AuthPage.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/Style/ChatWindow.css" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/src/Style/ChatWindow.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/assets/fonts/Bold-Italic.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/assets/fonts/Bold.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/assets/fonts/Italic.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/assets/fonts/Regular.ttf" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/src/assets/fonts/Regular.ttf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/react-frontend/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/react-frontend/src/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Authentication/LoginRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/authentication/LoginRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Authentication/LoginResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/authentication/LoginResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Authentication/RegisterRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/authentication/RegisterRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Authentication/RegisterResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/authentication/RegisterResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/ChatRoom/ChatRoom.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/chatRoom/ChatRoom.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/ChatRoom/ChatRoomController.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/chatRoom/ChatRoomController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/ChatRoom/ChatRoomDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/chatRoom/ChatRoomDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/ChatRoom/ChatRoomMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/chatRoom/ChatRoomMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/ChatRoom/ChatRoomRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/chatRoom/ChatRoomRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/ChatRoom/ChatRoomResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/chatRoom/ChatRoomResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/ChatRoom/ChatRoomService.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/chatRoom/ChatRoomService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/Message.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/Message.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageController.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageService.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Message/MessageService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/User/UserService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/config/WebSocketConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Config/WebSocketConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/enums/ChatRoomType.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Enums/ChatRoomType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/enums/MessageStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Enums/MessageStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/enums/MessageType.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Enums/MessageType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/enums/UserStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/java/com/ankitarsh/securemessaging/Enums/UserStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/secure-messaging-app-backend/src/main/resources/application.properties" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="importingSettings">
+      <MavenImportingSettings>
+        <option name="downloadAnnotationsAutomatically" value="true" />
+        <option name="downloadDocsAutomatically" value="true" />
+        <option name="downloadSourcesAutomatically" value="true" />
+      </MavenImportingSettings>
+    </option>
+  </component>
+  <component name="MavenRunner">
+    <option name="delegateBuildToMaven" value="true" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="2xMpGYHZChxvhxgR9IlhipKCuVF" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.SecureMessagingAppApplication.executor": "Run",
+    "Maven.SecureMessagingAppApplication.executor": "Run",
+    "Maven.secure-messaging-app [clean,install...].executor": "Run",
+    "Maven.secure-messaging-app [clean].executor": "Run",
+    "Maven.secure-messaging-app [install...].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "E:/secure-messaging-app",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.28850573",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CreateClassDialog.RecentsKey">
+      <recent name="com.ankitarsh.securemessaging.Security" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="SecureMessagingAppApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+      <option name="ALTERNATIVE_JRE_PATH" value="21" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+      <option name="MAIN_CLASS_NAME" value="com.SecureMessagingAppApplication" />
+      <module name="secure-messaging-app" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/secure-messaging-app-backend" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Application" factoryName="Application">
+      <option name="ALTERNATIVE_JRE_PATH" value="C:/Program Files/Java/jdk-21" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+      <option name="MAIN_CLASS_NAME" value="com.SecureMessagingAppApplication" />
+      <module name="secure-messaging-app" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/secure-messaging-app-backend" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="1f89a906-4ef1-4a53-9ec5-19eb05ac907a" name="Changes" comment="" />
+      <created>1747757702904</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1747757702904</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
