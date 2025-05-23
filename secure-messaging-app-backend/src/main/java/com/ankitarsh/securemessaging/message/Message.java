@@ -1,6 +1,7 @@
 package com.ankitarsh.securemessaging.message;
 
 import com.ankitarsh.securemessaging.chatroom.ChatRoom;
+import com.ankitarsh.securemessaging.files.File;
 import com.ankitarsh.securemessaging.group.Group;
 import com.ankitarsh.securemessaging.user.User;
 import com.ankitarsh.securemessaging.enums.MessageStatus;
@@ -55,7 +56,7 @@ public class Message {
     /**
      * Content of the message in text format.
      */
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String content;
 
     /**
@@ -64,6 +65,10 @@ public class Message {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageType messageType;
+
+    @ManyToOne
+    @JoinColumn(name = "file_id")
+    private File file;
 
     /**
      * Timestamp of when message was created.
@@ -103,11 +108,12 @@ public class Message {
      * One-to-One Message Constructor for personal chats
      */
     public Message(ChatRoom chatroom, User sender, User receiver, String content, MessageType messageType,
-                   MessageStatus messageStatus, Message replyTo) {
+                   MessageStatus messageStatus, Message replyTo, File file) {
         this.chatroom = chatroom;
         this.sender = sender;
         this.receiver = receiver;
         this.content = content;
+        this.file = file;
         this.messageType = messageType;
         this.messageStatus = messageStatus;
         this.replyTo = replyTo;
@@ -117,10 +123,11 @@ public class Message {
      * Constructor for group messages
      */
     public Message(ChatRoom chatroom, User sender, Group group, String content, MessageType messageType,
-                   MessageStatus messageStatus, Message replyTo) {
+                   MessageStatus messageStatus, Message replyTo, File file) {
         this.chatroom = chatroom;
         this.sender = sender;
         this.group = group;
+        this.file = file;
         this.content = content;
         this.messageType = messageType;
         this.messageStatus = messageStatus;
@@ -216,5 +223,13 @@ public class Message {
 
     public void setReplyTo(Message replyTo) {
         this.replyTo = replyTo;
+    }
+
+    public File getFile() {
+        return file;
+    }
+
+    public void setFile(File file) {
+        this.file = file;
     }
 }

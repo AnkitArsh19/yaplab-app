@@ -2,6 +2,7 @@ package com.ankitarsh.securemessaging.chatroom;
 
 import com.ankitarsh.securemessaging.group.Group;
 import com.ankitarsh.securemessaging.group.GroupService;
+import com.ankitarsh.securemessaging.message.MessageMapper;
 import com.ankitarsh.securemessaging.message.MessageResponseDTO;
 import com.ankitarsh.securemessaging.user.User;
 import com.ankitarsh.securemessaging.user.UserRepository;
@@ -20,13 +21,15 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMapper chatRoomMapper;
     private final UserRepository userRepository;
+    private final MessageMapper messageMapper;
 
-    public ChatRoomService(UserService userService, GroupService groupService, ChatRoomRepository chatRoomRepository, ChatRoomMapper chatRoomMapper, UserRepository userRepository) {
+    public ChatRoomService(UserService userService, GroupService groupService, ChatRoomRepository chatRoomRepository, ChatRoomMapper chatRoomMapper, UserRepository userRepository, MessageMapper messageMapper) {
         this.userService = userService;
         this.groupService = groupService;
         this.chatRoomRepository = chatRoomRepository;
         this.chatRoomMapper = chatRoomMapper;
         this.userRepository = userRepository;
+        this.messageMapper = messageMapper;
     }
 
     public String getOrCreatePersonalChatRoomId(
@@ -107,13 +110,8 @@ public class ChatRoomService {
     public List<MessageResponseDTO> getMessagesFromChatRoom(String chatroomId){
         return chatRoomRepository.findById(chatroomId)
                 .map(chatRoom -> chatRoom.getMessages().stream()
-                    .map(message -> new MessageResponseDTO(
-                            message.getId(),
-                            message.getSender().getUserName(),
-                            message.getContent(),
-                            message.getTimestamp(),
-                            message.getMessageStatus()
-                )).collect(Collectors.toList()))
+                        .map(messageMapper::toResponseDTO)
+                        .collect(Collectors.toList()))
                 .orElse(Collections.emptyList());
     }
 

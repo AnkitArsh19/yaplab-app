@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.*;
  * REST Controller for handling user operations.
  * Provides endpoints for registering, finding, updating and deleting users.
  */
-@RestController("/user")
+@RestController
+@RequestMapping("/users")
 public class UserController {
 
     /**

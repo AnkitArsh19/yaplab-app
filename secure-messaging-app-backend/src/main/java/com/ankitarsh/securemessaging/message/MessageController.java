@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Controller
 @RestController
-@RequestMapping("/message")
+@RequestMapping("/messages")
 public class MessageController {
 
     /**

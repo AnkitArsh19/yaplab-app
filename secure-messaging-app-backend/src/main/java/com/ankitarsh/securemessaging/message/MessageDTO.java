@@ -6,7 +6,10 @@ import jakarta.validation.constraints.NotNull;
 public record MessageDTO(
         @NotNull Long senderId,
         Long receiverId,
-        @NotEmpty String content,
-        Long groupId
+        String content,
+        Long groupId,
+        String fileUrl,
+        String fileName,
+        Long fileSize
 ) {
 }

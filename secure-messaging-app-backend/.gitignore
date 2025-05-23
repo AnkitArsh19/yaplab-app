@@ -40,3 +40,5 @@ src/main/resources/application-*.properties
 ### Logs ###
 *.log
 logs/
+
+uploads/

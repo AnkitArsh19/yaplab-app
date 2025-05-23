@@ -2,6 +2,8 @@ package com.ankitarsh.securemessaging.message;
 
 import com.ankitarsh.securemessaging.chatroom.ChatRoom;
 import com.ankitarsh.securemessaging.chatroom.ChatRoomService;
+import com.ankitarsh.securemessaging.files.File;
+import com.ankitarsh.securemessaging.files.FilesRepository;
 import com.ankitarsh.securemessaging.group.Group;
 import com.ankitarsh.securemessaging.group.GroupService;
 import com.ankitarsh.securemessaging.user.User;
@@ -23,13 +25,15 @@ public class MessageService {
     private final ChatRoomService chatRoomService;
     private final UserService userService;
     private final GroupService groupService;
+    private final FilesRepository filesRepository;
 
-    public MessageService(MessageRepository messageRepository, MessageMapper messageMapper, ChatRoomService chatRoomService, UserService userService, GroupService groupService) {
+    public MessageService(MessageRepository messageRepository, MessageMapper messageMapper, ChatRoomService chatRoomService, UserService userService, GroupService groupService, FilesRepository filesRepository) {
         this.messageRepository = messageRepository;
         this.messageMapper = messageMapper;
         this.chatRoomService = chatRoomService;
         this.userService = userService;
         this.groupService = groupService;
+        this.filesRepository = filesRepository;
     }
 
     /**
@@ -41,7 +45,23 @@ public class MessageService {
         ChatRoom chatRoom = chatRoomService.getChatroomById(chatRoomId);
         User sender = userService.getUserEntityByID(messageDTO.senderId());
         User receiver = userService.getUserEntityByID(messageDTO.receiverId());
-        Message message = messageMapper.createPersonalMessage(chatRoom, sender, receiver, messageDTO.content());
+        // Create or fetch the File entity based on MessageDTO file information
+        File attachedFile = null;
+        if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
+            // Assuming the client sends file details after uploading
+            // You might want to fetch the file by fileUrl or ID if you changed the DTO
+            // For now, we'll create a new File entity with the provided details
+            attachedFile = new File();
+            attachedFile.setFileUrl(messageDTO.fileUrl());
+            attachedFile.setFileName(messageDTO.fileName());
+            attachedFile.setFileSize(messageDTO.fileSize());
+            // Assuming you might want to associate the file with the sender in the File entity
+            attachedFile.setUploadedBy(sender);
+            // Determine file type if not provided in DTO (optional, based on your needs)
+            // attachedFile.setFileType(...); // You might need to determine this
+            filesRepository.save(attachedFile); // Save the file entity
+        }
+        Message message = messageMapper.createPersonalMessage(chatRoom, sender, receiver, messageDTO.content(), attachedFile);
         messageRepository.save(message);
         chatRoomService.updateLastActivity(chatRoomId);
         return messageMapper.toResponseDTO(message);
@@ -55,7 +75,23 @@ public class MessageService {
         ChatRoom chatRoom = chatRoomService.getChatroomById(chatRoomId);
         User sender = userService.getUserEntityByID(messageDTO.senderId());
         Group group = groupService.getGroupEntity(messageDTO.groupId());
-        Message message = messageMapper.createGroupMessage(chatRoom, sender, group , messageDTO.content());
+        // Create or fetch the File entity based on MessageDTO file information
+        File attachedFile = null;
+        if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
+            // Assuming the client sends file details after uploading
+            // For now, we'll create a new File entity with the provided details
+            attachedFile = new File();
+            attachedFile.setFileUrl(messageDTO.fileUrl());
+            attachedFile.setFileName(messageDTO.fileName());
+            attachedFile.setFileSize(messageDTO.fileSize());
+            // Assuming you might want to associate the file with the sender in the File entity
+            attachedFile.setUploadedBy(sender);
+            // Determine file type if not provided in DTO (optional, based on your needs)
+            // attachedFile.setFileType(...); // You might need to determine this
+            filesRepository.save(attachedFile); // Save the file entity
+        }
+
+        Message message = messageMapper.createGroupMessage(chatRoom, sender, group , messageDTO.content(), attachedFile);
         messageRepository.save(message);
         chatRoomService.updateLastActivity(chatRoomId);
         return messageMapper.toResponseDTO(message);

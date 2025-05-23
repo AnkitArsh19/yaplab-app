@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/chatroom")
+@RequestMapping("/chatrooms")
 public class ChatRoomController {
     public final ChatRoomService chatRoomService;
 
