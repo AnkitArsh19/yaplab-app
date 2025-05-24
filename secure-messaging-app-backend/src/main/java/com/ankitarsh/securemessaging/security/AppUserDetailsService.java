@@ -1,4 +1,5 @@
 package com.ankitarsh.securemessaging.security;
+
 import com.ankitarsh.securemessaging.user.User;
 import com.ankitarsh.securemessaging.user.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;

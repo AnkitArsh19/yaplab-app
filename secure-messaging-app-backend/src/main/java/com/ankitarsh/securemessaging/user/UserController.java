@@ -1,10 +1,17 @@
 package com.ankitarsh.securemessaging.user;
+
 import jakarta.validation.Valid;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+
+import java.util.List;
+import java.util.Objects;
 
 /**
  * REST Controller for handling user operations.
@@ -23,6 +30,11 @@ public class UserController {
         this.userService = userService;
     }
 
+    /**
+     * Disconnects the user after doing a logout
+     * @param userId
+     * @return
+     */
     @MessageMapping("/user.disconnectUser")
     @SendTo("/topic/status")
     public UserResponseDTO disconnectUser(
@@ -79,5 +91,23 @@ public class UserController {
         userService.disconnect(id);
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search/{userName}")
+    public ResponseEntity<List<UserResponseDTO>> findUsers(
+            @PathVariable String userName
+    ){
+        List<UserResponseDTO> response = userService.findUsername(userName);
+        return ResponseEntity.ok(response);
+    }
+
+    @EventListener
+    public void handleWebSocketDisconnectListener
+            (SessionDisconnectEvent event){
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+        String userId = (String) Objects.requireNonNull(headerAccessor.getSessionAttributes()).get("userId");
+        if(userId != null){
+            userService.disconnect(Long.valueOf(userId));
+        }
     }
 }

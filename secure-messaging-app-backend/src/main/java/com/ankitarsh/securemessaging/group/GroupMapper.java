@@ -2,6 +2,7 @@ package com.ankitarsh.securemessaging.group;
 
 import com.ankitarsh.securemessaging.user.User;
 import org.springframework.stereotype.Service;
+
 import java.util.stream.Collectors;
 
 @Service

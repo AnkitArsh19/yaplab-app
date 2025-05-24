@@ -1,9 +1,11 @@
 package com.ankitarsh.securemessaging.user;
+
 import com.ankitarsh.securemessaging.authentication.LoginRequestDTO;
 import com.ankitarsh.securemessaging.authentication.LoginResponseDTO;
 import com.ankitarsh.securemessaging.authentication.RegisterRequestDTO;
-import com.ankitarsh.securemessaging.security.JWTService;
+import com.ankitarsh.securemessaging.authentication.RegisterResponseDTO;
 import com.ankitarsh.securemessaging.enums.UserStatus;
+import com.ankitarsh.securemessaging.security.JWTService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,25 +22,27 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
+    /**
+     * Constructor based dependency injection
+     */
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final AuthenticationManager authManager;
-    private final JWTService jwtService;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper, BCryptPasswordEncoder passwordEncoder, AuthenticationManager authManager, JWTService jwtService) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
-        this.authManager = authManager;
-        this.jwtService = jwtService;
     }
 
     /**
      * Registers a new user and saves to the database.
-     * @return saved user.
+     * Does not register an existing user in the database.
+     * Password is encoded and saved in the database using password encoder.
+     * @param registerRequestDTO A DTO with fields given by user to register
+     * @return A responseDTO sent in response
      */
-    public UserResponseDTO registerUser(RegisterRequestDTO registerRequestDTO){
+    public RegisterResponseDTO registerUser(RegisterRequestDTO registerRequestDTO){
         User user = userMapper.toEntityFromRegisterRequest(registerRequestDTO);
         Optional<User> userExists = userRepository.findByEmailId(user.getEmailId());
         if(userExists.isPresent()) {
@@ -47,27 +51,13 @@ public class UserService {
         user.setStatus(UserStatus.OFFLINE);
         user.setPassword(passwordEncoder.encode(registerRequestDTO.password()));
         userRepository.save(user);
-        return userMapper.toResponseDTO(user);
+        return userMapper.toRegisterResponseDTO(user);
     }
 
     /**
-     * Login a user to his existing account.
-     * @return saved user.
+     * Sets the status of the user to offline.
+     * @param userId The userId of the userId
      */
-    public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO){
-        User user = userRepository.findByEmailId(loginRequestDTO.emailId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        Authentication authentication =
-                authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUserName(), loginRequestDTO.password()));
-        if(!authentication.isAuthenticated()) {
-            throw new IllegalArgumentException("Invalid Credentials");
-        }
-        user.setStatus(UserStatus.ONLINE);
-        userRepository.save(user);
-        String token = jwtService.generateToken(user.getUserName());
-        return userMapper.toLoginResponseDTO(user, token);
-    }
-
     public void disconnect(Long userId){
         userRepository.findById(userId).ifPresent(user -> {
                 user.setStatus(UserStatus.OFFLINE);
@@ -85,13 +75,26 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found")));
     }
 
+    /**
+     * Gets the user from the database using userId
+     * @param id The userId of the user
+     * @return The User object
+     */
     public User getUserEntityByID(Long id){
         return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
-    public List<User> findUsername(String username){
-        return userRepository.findByUserNameContainingIgnoreCase(username);
+    /**
+     * Finds the list of users with the searched set of characters
+     * @param username the inputted set of characters
+     * @return the list of User response DTO object
+     */
+    public List<UserResponseDTO> findUsername(String username){
+        return userRepository.findByUserNameContainingIgnoreCase(username)
+                .stream()
+                .map(userMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -127,8 +130,6 @@ public class UserService {
             oldUser.setEmailId(userDTO.emailId());
         if (userDTO.mobileNumber()!=null)
             oldUser.setMobileNumber(userDTO.mobileNumber());
-        if (userDTO.password()!=null)
-            oldUser.setPassword(userDTO.password());
         User updatedUser = userMapper.toEntityFromDTO(userDTO);
         updatedUser.setId(oldUser.getId());
 
@@ -149,8 +150,13 @@ public class UserService {
 
     }
 
-    public List<UserResponseDTO> findConnectedUsers(){
-        return userRepository.findByStatus(UserStatus.ONLINE)
+    /**
+     * Finds the list of connected or disconnected users.
+     * @param status status of the user
+     * @return the list of user response DTO object.
+     */
+    public List<UserResponseDTO> findConnectedUsers(UserStatus status){
+        return userRepository.findByStatus(status)
                 .stream()
                 .map(userMapper::toResponseDTO)
                 .collect(Collectors.toList());

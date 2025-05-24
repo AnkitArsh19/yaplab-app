@@ -1,9 +1,9 @@
 package com.ankitarsh.securemessaging.group;
 
-
 import com.ankitarsh.securemessaging.user.User;
 import com.ankitarsh.securemessaging.user.UserRepository;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;

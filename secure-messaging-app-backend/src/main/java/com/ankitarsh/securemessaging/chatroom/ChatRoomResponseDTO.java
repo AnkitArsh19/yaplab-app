@@ -1,8 +1,9 @@
 package com.ankitarsh.securemessaging.chatroom;
 
+import com.ankitarsh.securemessaging.enums.ChatRoomType;
 import com.ankitarsh.securemessaging.group.GroupResponseDTO;
 import com.ankitarsh.securemessaging.user.UserResponseDTO;
-import com.ankitarsh.securemessaging.enums.ChatRoomType;
+
 import java.time.LocalDateTime;
 import java.util.List;
 

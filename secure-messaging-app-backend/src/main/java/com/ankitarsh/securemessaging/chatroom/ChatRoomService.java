@@ -1,5 +1,6 @@
 package com.ankitarsh.securemessaging.chatroom;
 
+import com.ankitarsh.securemessaging.enums.ChatRoomType;
 import com.ankitarsh.securemessaging.group.Group;
 import com.ankitarsh.securemessaging.group.GroupService;
 import com.ankitarsh.securemessaging.message.MessageMapper;
@@ -7,7 +8,6 @@ import com.ankitarsh.securemessaging.message.MessageResponseDTO;
 import com.ankitarsh.securemessaging.user.User;
 import com.ankitarsh.securemessaging.user.UserRepository;
 import com.ankitarsh.securemessaging.user.UserService;
-import com.ankitarsh.securemessaging.enums.ChatRoomType;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

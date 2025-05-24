@@ -1,4 +1,6 @@
 package com.ankitarsh.securemessaging.security;
+
+import com.ankitarsh.securemessaging.token.RefreshTokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 
 @Component
@@ -16,10 +19,12 @@ public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTService jwtService;
     private final AppUserDetailsService userDetailsService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public JWTFilter(JWTService jwtService, AppUserDetailsService userDetailsService) {
+    public JWTFilter(JWTService jwtService, AppUserDetailsService userDetailsService, RefreshTokenRepository refreshTokenRepository) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Override

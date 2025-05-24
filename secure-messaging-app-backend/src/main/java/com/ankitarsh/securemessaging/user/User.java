@@ -2,9 +2,10 @@ package com.ankitarsh.securemessaging.user;
 
 import com.ankitarsh.securemessaging.enums.UserStatus;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 /**
  * User entity to store user details like userName, email ID, mobile number and password.
@@ -80,7 +81,6 @@ public class User {
     /**
      * Parameterized constructor.
      */
-
     public User(Long id, String userName, String emailId, String mobileNumber, String password) {
         this.id = id;
         this.userName = userName;
@@ -93,8 +93,6 @@ public class User {
      /**
      *  Getters and Setters for returning the details and setting the details for the private fields
      */
-
-
     public Long getId() {
         return id;
     }

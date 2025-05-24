@@ -1,7 +1,9 @@
 package com.ankitarsh.securemessaging.security;
+
 import com.ankitarsh.securemessaging.user.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.Collection;
 import java.util.Collections;
 
