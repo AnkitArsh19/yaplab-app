@@ -1,11 +1,15 @@
-package com.yaplab.authentication;
+package com.yaplab.security.authentication;
 
-import com.yaplab.token.AccessTokenResponseDTO;
-import com.yaplab.token.RefreshTokenRequestDTO;
-import com.yaplab.user.UserService;
 import com.resend.core.exception.ResendException;
+import com.yaplab.security.authentication.passwordreset.ForgotPasswordRequestDTO;
+import com.yaplab.security.authentication.passwordreset.PasswordChangeRequestDTO;
+import com.yaplab.security.authentication.passwordreset.ResetPasswordRequestDTO;
+import com.yaplab.security.token.AccessTokenResponseDTO;
+import com.yaplab.security.token.RefreshTokenRequestDTO;
+import com.yaplab.user.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequestMapping("/auth")
@@ -70,6 +74,16 @@ public class AuthenticationController {
     ) throws ResendException {
         authenticationService.sendPasswordResetLink(requestDTO.emailId());
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/verify-email")
+    public RedirectView verifyEmail(@RequestParam("token") String token) {
+        try {
+            authenticationService.verifyEmail(token);
+            return new RedirectView("/login?verified=true");
+        } catch (IllegalArgumentException e) {
+            return new RedirectView("/verify-error?error=" + e.getMessage());
+        }
     }
 
     @PostMapping("/reset-password")

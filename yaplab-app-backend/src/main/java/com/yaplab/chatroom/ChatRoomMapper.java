@@ -25,7 +25,9 @@ public class ChatRoomMapper {
                                 user.getEmailId(),
                                 user.getMobileNumber(),
                                 user.getStatus(),
-                                user.getProfilePictureUrl()
+                                user.getProfilePictureUrl(),
+                                user.getCreatedAt(),
+                                user.getUpdatedAt()
                         ))
                         .collect(Collectors.toList()),
                 chatRoom.getGroup() != null ? new GroupResponseDTO(

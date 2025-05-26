@@ -4,17 +4,19 @@ import com.yaplab.enums.MessageStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST Controller for handling messaging operations.
  * Provides endpoints for sending, retrieving, updating, and deleting messages.
  */
 @Controller
-@RestController
 @RequestMapping("/messages")
 public class MessageController {
 
@@ -29,7 +31,29 @@ public class MessageController {
     }
 
     /**
-     * Sends a personal message between two users.
+     * Handles incoming WebSocket messages to update a message's status to DELIVERED.
+     * @return A map containing the messageId and the new status.
+     */
+    @MessageMapping("/status/delivered")
+    @SendTo("/topic/messages") // Or a chatroom-specific topic
+    public Map<String, Object> handleDeliveredStatusUpdate(@Payload Long messageId) {
+        messageService.updateMessageStatus(messageId, MessageStatus.DELIVERED);
+        return createStatusUpdatePayload(messageId, MessageStatus.DELIVERED);
+    }
+    /**
+     * Handles incoming WebSocket messages to update a message's status to READ.
+     * @return A map containing the messageId and the new status.
+     */
+    @MessageMapping("/status/read")
+    @SendTo("/topic/messages") // Or a chatroom-specific topic
+    public Map<String, Object> handleReadStatusUpdate(@Payload Long messageId) {
+        messageService.updateMessageStatus(messageId, MessageStatus.READ);
+        return createStatusUpdatePayload(messageId, MessageStatus.READ);
+    }
+
+    /**
+     * This method sends a personal message between two users.
+     * @param messageDTO The DTO containing message details such as sender, receiver, content, etc.
      * @return ResponseEntity indicating success or failure.
      */
     @MessageMapping("/personal")
@@ -39,8 +63,10 @@ public class MessageController {
     ){
         return messageService.sendPersonalMessage(messageDTO);
     }
+    
     /**
-     * Sends a message in a group.
+     * This method sends a message in a group.
+     * @param messageDTO The DTO containing message details such as sender, group ID, content, etc.
      * @return ResponseEntity indicating success or failure.
      */
     @MessageMapping("/group")
@@ -51,8 +77,28 @@ public class MessageController {
     }
 
     /**
-     * Returns list of messages between two users.
-     *
+     * Sends a reply message to an existing message via WebSocket.
+     * @return The created MessageResponseDTO.
+     */
+    @MessageMapping("/reply")
+    @SendTo("/topic/messages")
+    public MessageResponseDTO sendReplyMessageViaWebSocket(
+            @Payload MessageDTO messageDTO) {
+        return messageService.sendReplyMessage(messageDTO, messageDTO.repliedToMessageId());
+    }
+
+    /**
+     * Sends a reply message to an existing message.
+     * @return ResponseEntity with the created MessageResponseDTO.
+     */
+    @PostMapping("/reply")
+    public ResponseEntity<MessageResponseDTO> sendReplyMessage(
+            @RequestBody MessageDTO messageDTO) {
+        return ResponseEntity.ok(messageService.sendReplyMessage(messageDTO, messageDTO.repliedToMessageId()));
+    }
+
+    /**
+     * This method retrieves messages sent between two users.
      * @param senderId   ID of the sender.
      * @param receiverId ID of the receiver.
      * @return ResponseEntity with a list of messages or an empty entity.
@@ -71,8 +117,7 @@ public class MessageController {
     }
 
     /**
-     * Returns list of messages between two users.
-     *
+     * This method retrieves messages sent in a group.
      * @param groupId   ID of the group.
      * @return ResponseEntity with a list of messages or an empty entity.
      */
@@ -89,8 +134,7 @@ public class MessageController {
     }
 
     /**
-     * Updates the status of message to sent,read,delivered.
-     *
+     * This method is used to update the status of a message based on its ID.
      * @param messageId  ID of the message.
      * @param status    new status of the message.
      * @return ResponseEntity with a response of successful update.
@@ -105,7 +149,7 @@ public class MessageController {
     }
 
     /**
-     * Soft deletes a message.
+     * This method soft deletes a message.
      * @param messageId ID of the message.
      * @return ResponseEntity with no content.
      */
@@ -115,5 +159,12 @@ public class MessageController {
     ){
         messageService.softDeleteMessage(messageId);
         return ResponseEntity.noContent().build();
+    }
+
+    private Map<String, Object> createStatusUpdatePayload(Long messageId, MessageStatus status) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("messageId", messageId);
+        payload.put("status", status);
+        return payload;
     }
 }

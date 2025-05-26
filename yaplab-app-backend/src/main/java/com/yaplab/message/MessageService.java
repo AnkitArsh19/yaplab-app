@@ -3,6 +3,7 @@ package com.yaplab.message;
 import com.yaplab.chatroom.ChatRoom;
 import com.yaplab.chatroom.ChatRoomService;
 import com.yaplab.enums.MessageStatus;
+import com.yaplab.enums.MessageType;
 import com.yaplab.files.File;
 import com.yaplab.files.FilesRepository;
 import com.yaplab.group.Group;
@@ -39,28 +40,25 @@ public class MessageService {
 
     /**
      * Sends a personal message from one user to another and saves it in the database.
+     * Sends a file if a file is sent.
      */
     public MessageResponseDTO sendPersonalMessage(
             MessageDTO messageDTO){
+        if (messageDTO.receiverId() == null || messageDTO.groupId() != null || messageDTO.repliedToMessageId() != null) {
+            throw new IllegalArgumentException("Invalid MessageDTO for a personal message. receiverId must be present, groupId and repliedToMessageId must be null.");
+        }
         String chatRoomId = chatRoomService.getOrCreatePersonalChatRoomId(messageDTO.senderId(), messageDTO.receiverId());
         ChatRoom chatRoom = chatRoomService.getChatroomById(chatRoomId);
         User sender = userService.getUserEntityByID(messageDTO.senderId());
         User receiver = userService.getUserEntityByID(messageDTO.receiverId());
-        // Create or fetch the File entity based on MessageDTO file information
         File attachedFile = null;
         if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
-            // Assuming the client sends file details after uploading
-            // You might want to fetch the file by fileUrl or ID if you changed the DTO
-            // For now, we'll create a new File entity with the provided details
             attachedFile = new File();
             attachedFile.setFileUrl(messageDTO.fileUrl());
             attachedFile.setFileName(messageDTO.fileName());
             attachedFile.setFileSize(messageDTO.fileSize());
-            // Assuming you might want to associate the file with the sender in the File entity
             attachedFile.setUploadedBy(sender);
-            // Determine file type if not provided in DTO (optional, based on your needs)
-            // attachedFile.setFileType(...); // You might need to determine this
-            filesRepository.save(attachedFile); // Save the file entity
+            filesRepository.save(attachedFile);
         }
         Message message = messageMapper.createPersonalMessage(chatRoom, sender, receiver, messageDTO.content(), attachedFile);
         messageRepository.save(message);
@@ -70,32 +68,82 @@ public class MessageService {
 
     /**
      * Sends a group message from one user to a group with multiple users and saves it in the database.
+     * Sends a file if a file is sent
      */
-    public MessageResponseDTO sendGroupMessage(MessageDTO messageDTO){
+    public MessageResponseDTO sendGroupMessage(
+            MessageDTO messageDTO
+    ){
+        if (messageDTO.groupId() == null || messageDTO.receiverId() != null || messageDTO.repliedToMessageId() != null) {
+        throw new IllegalArgumentException("Invalid MessageDTO for a group message. groupId must be present, receiverId and repliedToMessageId must be null.");
+        }
         String chatRoomId = chatRoomService.getOrCreateGroupChatRoomId(messageDTO.groupId());
         ChatRoom chatRoom = chatRoomService.getChatroomById(chatRoomId);
         User sender = userService.getUserEntityByID(messageDTO.senderId());
         Group group = groupService.getGroupEntity(messageDTO.groupId());
-        // Create or fetch the File entity based on MessageDTO file information
         File attachedFile = null;
         if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
-            // Assuming the client sends file details after uploading
-            // For now, we'll create a new File entity with the provided details
             attachedFile = new File();
             attachedFile.setFileUrl(messageDTO.fileUrl());
             attachedFile.setFileName(messageDTO.fileName());
             attachedFile.setFileSize(messageDTO.fileSize());
-            // Assuming you might want to associate the file with the sender in the File entity
             attachedFile.setUploadedBy(sender);
-            // Determine file type if not provided in DTO (optional, based on your needs)
-            // attachedFile.setFileType(...); // You might need to determine this
-            filesRepository.save(attachedFile); // Save the file entity
+            filesRepository.save(attachedFile);
         }
 
         Message message = messageMapper.createGroupMessage(chatRoom, sender, group , messageDTO.content(), attachedFile);
         messageRepository.save(message);
         chatRoomService.updateLastActivity(chatRoomId);
         return messageMapper.toResponseDTO(message);
+    }
+
+    /**
+     * Sends a reply message to an existing message and saves it in the database.
+     */
+    public MessageResponseDTO sendReplyMessage(MessageDTO replyMessageDTO, Long repliedToMessageId) {
+        if (replyMessageDTO.receiverId() != null || replyMessageDTO.groupId() != null) {
+            throw new IllegalArgumentException("Invalid MessageDTO for a reply message. receiverId and groupId must be null.");
+        }
+
+        // Find the message being replied to
+        if (repliedToMessageId == null) {
+            throw new IllegalArgumentException("repliedToMessageId cannot be null for a reply message.");
+        }
+
+        Message repliedToMessage = messageRepository.findById(repliedToMessageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message being replied to not found with ID: " + repliedToMessageId));
+
+        if (repliedToMessage.getSoftDeleted()) {
+            throw new IllegalArgumentException("Cannot reply to a soft-deleted message.");
+        }
+
+        // Determine the chatroom for the reply message
+        ChatRoom chatRoom = repliedToMessage.getChatroom();
+        if (chatRoom == null) {
+            throw new IllegalArgumentException("Chatroom for the replied-to message not found.");
+        }
+
+        // Get the sender of the reply message
+        User sender = userService.getUserEntityByID(replyMessageDTO.senderId());
+
+        // Create or fetch the File entity based on MessageDTO file information (similar to sendPersonalMessage/sendGroupMessage)
+        File attachedFile = null;
+        if (replyMessageDTO.fileUrl() != null && replyMessageDTO.fileName() != null && replyMessageDTO.fileSize() != null) {
+            attachedFile = new File();
+            attachedFile.setFileUrl(replyMessageDTO.fileUrl());
+            attachedFile.setFileName(replyMessageDTO.fileName());
+            attachedFile.setFileSize(replyMessageDTO.fileSize());
+            attachedFile.setUploadedBy(sender);
+            filesRepository.save(attachedFile);
+        }
+
+        // Create the reply message entity
+        Message replyMessage = messageMapper.createReplyMessage(
+                chatRoom, sender, replyMessageDTO.content(),
+                attachedFile, repliedToMessage
+        );
+        messageRepository.save(replyMessage);
+        chatRoomService.updateLastActivity(chatRoom.getChatroomId());
+        return messageMapper.toResponseDTO(replyMessage);
     }
 
     /**
@@ -124,7 +172,6 @@ public class MessageService {
 
     /**
      * Updates the status of a message.
-     *
      * @param id     The ID of the message.
      * @param status The status the message.
      * @throws RuntimeException if message is not found.

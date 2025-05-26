@@ -1,7 +1,7 @@
 package com.yaplab.security;
 
-import com.yaplab.token.RefreshToken;
-import com.yaplab.token.RefreshTokenRepository;
+import com.yaplab.security.token.RefreshToken;
+import com.yaplab.security.token.RefreshTokenRepository;
 import com.yaplab.user.User;
 import com.yaplab.user.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -36,7 +36,7 @@ public class JWTService {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    public String generateToken(String userName) {
+    public String generateAccessToken(String userName) {
             Map<String, Object> claims = new HashMap<>();
             return Jwts.builder()
                     .claims()
@@ -52,6 +52,11 @@ public class JWTService {
     public RefreshToken generateRefreshToken(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        List<RefreshToken> existingTokens = refreshTokenRepository.findByUserAndRevokedFalse(user);
+        existingTokens.forEach(token -> token.setRevoked(true));
+        refreshTokenRepository.saveAll(existingTokens);
+
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(UUID.randomUUID().toString())
                 .expiryDate(Instant.now().plusMillis(refreshExpiration))

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository interface to manage Groups entity.
+ * Repository interface to manage User entity.
  * Extends JPARepository to perform CRUD operations.
  */
 @Repository

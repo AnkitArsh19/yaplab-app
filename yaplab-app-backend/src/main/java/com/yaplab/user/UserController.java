@@ -7,6 +7,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
@@ -18,7 +19,7 @@ import java.util.Objects;
  * REST Controller for handling user operations.
  * Provides endpoints for registering, finding, updating and deleting users.
  */
-@RestController
+@Controller
 @RequestMapping("/users")
 public class UserController {
 
@@ -32,9 +33,9 @@ public class UserController {
     }
 
     /**
-     * Disconnects the user after doing a logout
-     * @param userId
-     * @return
+     * This method is called when a user disconnects from the WebSocket.
+     * @param userId ID of the user to disconnect.
+     * @return UserResponseDTO containing the updated user details.
      */
     @MessageMapping("/user.disconnectUser")
     @SendTo("/topic/status")
@@ -45,7 +46,8 @@ public class UserController {
     }
 
     /**
-     * Finds user from id.
+     * This method retrieves a user by their ID.
+     * It returns a ResponseEntity containing the UserResponseDTO with the user's details.
      * @param id ID of the user.
      * @return the user entity of that ID.
      */
@@ -57,7 +59,7 @@ public class UserController {
     }
 
     /**
-     * Finds user by emailId.
+     * This method retrieves a user by their email ID.
      * @param email emailId of the user.
      * @return the user entity of that emailId.
      */
@@ -69,7 +71,7 @@ public class UserController {
     }
 
     /**
-     * Update user details with the details given in body.
+     * This method is used to update the user details such as username, email, mobile number, etc.
      * @param userDetails details that needs to be updated
      * @return the User entity with updated details.
      */
@@ -82,7 +84,7 @@ public class UserController {
     }
 
     /**
-     * Deletes a user from the database
+     * This method is used to delete a user by their ID.
      * @param id ID of the user
      * @return ResponseEntity with no content.
      */
@@ -94,6 +96,10 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Searches the list of entire users in the database to provide in the search box.
+     * @param input Any set of characters that can be the email,name or mobile of the user
+     */
     @GetMapping("/search/{input}")
     public ResponseEntity<List<UserResponseDTO>> findUsers(
             @PathVariable String input
@@ -102,6 +108,11 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * This method is used to handle WebSocket disconnect events.
+     * It listens for SessionDisconnectEvent and updates the user's status to offline.
+     * @param event The SessionDisconnectEvent containing the session attributes.
+     */
     @EventListener
     public void handleWebSocketDisconnectListener
             (SessionDisconnectEvent event){
@@ -112,8 +123,13 @@ public class UserController {
         }
     }
 
+    /**
+     * This method is used to upload a new profile picture for the user.
+     * @param id UserId of the user
+     * @param file File uploaded by the user
+     */
     @PostMapping("/{id}/profile-picture")
-    public ResponseEntity<Void> uploadProfilePicture(
+    public ResponseEntity<Void> updateProfilePicture(
             @PathVariable Long id,
             @RequestParam("file")MultipartFile file
             ){

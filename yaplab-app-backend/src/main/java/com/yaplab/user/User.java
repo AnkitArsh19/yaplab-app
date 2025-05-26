@@ -1,14 +1,17 @@
 package com.yaplab.user;
 
 import com.yaplab.enums.UserStatus;
+import com.yaplab.security.token.RefreshToken;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.List;
 
 /**
- * User entity to store user details like userName, email ID, mobile number and password.
+ * Represents a user in the system.
+ * This entity is used to store user details
  */
 @Entity
 @Table(name = "user_details")
@@ -57,14 +60,14 @@ public class User {
      */
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     /**
      * Updated timestamp field.
      */
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     /**
      * Status of the user(ONLINE or OFFLINE).
@@ -72,8 +75,17 @@ public class User {
     @Column(name = "user_status")
     private UserStatus status;
 
+    /**
+     * Url of the profile picture stored.
+     */
     @Column(name = "profile-picture-url")
     private String profilePictureUrl;
+
+    /**
+     * List of valid and invalid tokens for security and maintaining record
+     */
+    @OneToMany(mappedBy = "user")
+    private List<RefreshToken> refreshTokens;
 
     /**
      * Default constructor.
@@ -144,12 +156,20 @@ public class User {
         this.emailVerified = emailVerified;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public LocalDateTime getUpdatedAt() {
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public UserStatus getStatus() {
@@ -166,5 +186,13 @@ public class User {
 
     public void setProfilePictureUrl(String profilePictureUrl) {
         this.profilePictureUrl = profilePictureUrl;
+    }
+
+    public List<RefreshToken> getRefreshTokens() {
+        return refreshTokens;
+    }
+
+    public void setRefreshTokens(List<RefreshToken> refreshTokens) {
+        this.refreshTokens = refreshTokens;
     }
 }

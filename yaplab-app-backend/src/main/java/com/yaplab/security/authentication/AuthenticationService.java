@@ -1,14 +1,17 @@
-package com.yaplab.authentication;
+package com.yaplab.security.authentication;
 
+import com.resend.core.exception.ResendException;
 import com.yaplab.enums.UserStatus;
 import com.yaplab.security.JWTService;
-import com.yaplab.token.AccessTokenResponseDTO;
-import com.yaplab.token.RefreshToken;
-import com.yaplab.token.RefreshTokenRepository;
+import com.yaplab.security.authentication.passwordreset.PasswordChangeRequestDTO;
+import com.yaplab.security.authentication.passwordreset.PasswordResetToken;
+import com.yaplab.security.authentication.passwordreset.PasswordResetTokenRepository;
+import com.yaplab.security.token.AccessTokenResponseDTO;
+import com.yaplab.security.token.RefreshToken;
+import com.yaplab.security.token.RefreshTokenRepository;
 import com.yaplab.user.User;
 import com.yaplab.user.UserMapper;
 import com.yaplab.user.UserRepository;
-import com.resend.core.exception.ResendException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,8 +36,9 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenRepository resetTokenRepository;
     private final EmailService emailService;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
-    public AuthenticationService(JWTService jwtService, UserRepository userRepository, RefreshTokenRepository refreshTokenRepository, AuthenticationManager authManager, UserMapper userMapper, PasswordEncoder passwordEncoder, PasswordResetTokenRepository resetTokenRepository, EmailService emailService) {
+    public AuthenticationService(JWTService jwtService, UserRepository userRepository, RefreshTokenRepository refreshTokenRepository, AuthenticationManager authManager, UserMapper userMapper, PasswordEncoder passwordEncoder, PasswordResetTokenRepository resetTokenRepository, EmailService emailService, EmailVerificationTokenRepository emailVerificationTokenRepository) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -42,27 +47,33 @@ public class AuthenticationService {
         this.passwordEncoder = passwordEncoder;
         this.resetTokenRepository = resetTokenRepository;
         this.emailService = emailService;
+        this.emailVerificationTokenRepository = emailVerificationTokenRepository;
     }
 
     /**
      * Login a user to the existing account.
      * The user is found in the database using emailId.
      * Authentication object is created by authManager by checking the password and username.
-     * The status is updated to online and token is generated to send in the response
+     * The status is updated to online and token is generated to send in the response.
+     * Marked as transactional to keep the method atomic due to multiple database operations
      * @param loginRequestDTO The object containing username and password
      * @return The login response DTO
      */
+    @Transactional
     public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO) {
         User user = userRepository.findByEmailId(loginRequestDTO.emailId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         Authentication authentication =
-                authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUserName(), loginRequestDTO.password()));
+                authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmailId(), loginRequestDTO.password()));
         if (!authentication.isAuthenticated()) {
             throw new IllegalArgumentException("Invalid Credentials");
         }
         user.setStatus(UserStatus.ONLINE);
         userRepository.save(user);
-        String accessToken = jwtService.generateToken(user.getEmailId());
+        List<RefreshToken> existingTokens = refreshTokenRepository.findByUserAndRevokedFalse(user);
+        existingTokens.forEach(token -> { token.setRevoked(true); refreshTokenRepository.save(token); });
+
+        String accessToken = jwtService.generateAccessToken(user.getEmailId());
         RefreshToken refreshToken = jwtService.generateRefreshToken(user.getId());
         return userMapper.toLoginResponseDTO(user, accessToken, refreshToken.getToken());
     }
@@ -74,21 +85,23 @@ public class AuthenticationService {
             String emailId = jwtService.extractUserName(token); // This is actually the email
             Optional<User> userOptional = userRepository.findByEmailId(emailId);
             userOptional.ifPresent(user -> {
-                Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUser(user);
-                refreshTokenOptional.ifPresent(refreshTokenRepository::delete);
+                Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserAndRevokedFalse(user).stream().findFirst();
+                refreshTokenOptional.ifPresent(refreshToken -> {
+                    refreshToken.setRevoked(true);
+                    refreshTokenRepository.save(refreshToken);                });
             });
         }
     }
 
     public AccessTokenResponseDTO refreshAccessToken(String refreshTokenStr){
-        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByToken(refreshTokenStr);
-        if(refreshTokenOptional.isEmpty() || refreshTokenOptional.get().getExpiryDate().isBefore(java.time.Instant.now())){
-            throw new RuntimeException("Invalid or expired refresh token");
-        }
-        User user = refreshTokenOptional.get().getUser();
-        String newAccessToken = jwtService.generateToken(user.getEmailId());
-        return new AccessTokenResponseDTO(newAccessToken);
+    Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByTokenAndRevokedFalse(refreshTokenStr);
+    if(refreshTokenOptional.isEmpty() || refreshTokenOptional.get().getExpiryDate().isBefore(java.time.Instant.now())){
+        throw new RuntimeException("Invalid or expired refresh token");
     }
+    User user = refreshTokenOptional.get().getUser();
+    String newAccessToken = jwtService.generateAccessToken(user.getEmailId());
+        return new AccessTokenResponseDTO(newAccessToken);
+}
 
     public void changePassword(PasswordChangeRequestDTO request){
         User user = userRepository.findByEmailId(request.emailId())
@@ -98,6 +111,21 @@ public class AuthenticationService {
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    public void verifyEmail(String token) {
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired email verification token"));
+
+        if (verificationToken.getExpiryDate().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("Email verification token has expired");
+        }
+
+        User user = verificationToken.getUser();
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
+        emailVerificationTokenRepository.delete(verificationToken);
     }
 
     @Transactional

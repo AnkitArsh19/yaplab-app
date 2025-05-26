@@ -1,15 +1,13 @@
-package com.yaplab.authentication;
+package com.yaplab.security.authentication;
 
 import com.yaplab.enums.UserStatus;
 
-public record LoginResponseDTO(
+public record RegisterResponseDTO(
         Long id,
         String userName,
         String emailId,
         String mobileNumber,
         UserStatus status,
-        String accessToken,
-        String refreshToken,
         String profilePictureUrl
 ) {
 }

@@ -1,4 +1,4 @@
-package com.yaplab.authentication;
+package com.yaplab.security.authentication;
 
 import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Aspect;
@@ -12,7 +12,7 @@ public class LoggingAspect {
     private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
 
     // Log exceptions thrown by any method in the authentication package
-    @AfterThrowing(pointcut = "execution(* com.ankitarsh.securemessaging.authentication..*(..))", throwing = "ex")
+    @AfterThrowing(pointcut = "execution(* com.yaplab.authentication..*(..))", throwing = "ex")
     public void logAfterThrowing(Exception ex) {
         logger.error("Exception caught: ", ex);
     }

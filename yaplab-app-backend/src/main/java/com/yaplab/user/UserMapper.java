@@ -1,8 +1,8 @@
 package com.yaplab.user;
 
-import com.yaplab.authentication.LoginResponseDTO;
-import com.yaplab.authentication.RegisterRequestDTO;
-import com.yaplab.authentication.RegisterResponseDTO;
+import com.yaplab.security.authentication.LoginResponseDTO;
+import com.yaplab.security.authentication.RegisterRequestDTO;
+import com.yaplab.security.authentication.RegisterResponseDTO;
 import org.springframework.stereotype.Service;
 
 /**
@@ -45,7 +45,9 @@ public class UserMapper {
                 user.getEmailId(),
                 user.getMobileNumber(),
                 user.getStatus(),
-                user.getProfilePictureUrl()
+                user.getProfilePictureUrl(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
         );
     }
 
@@ -88,6 +90,11 @@ public class UserMapper {
         return user;
     }
 
+    /**
+     * Creates a register response object from the user entity
+     * @param user the entity object of the user
+     * @return the registerResponseDTO
+     */
     public RegisterResponseDTO toRegisterResponseDTO(User user){
         if (user == null) {
             return null;

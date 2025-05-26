@@ -9,7 +9,7 @@ import com.yaplab.user.User;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Message entity to store id, sender_id, receiver_id, content, message_type, message_status, etc.
@@ -67,6 +67,9 @@ public class Message {
     @Column(nullable = false)
     private MessageType messageType;
 
+    /**
+     * File sent or received as a message
+     */
     @ManyToOne
     @JoinColumn(name = "file_id")
     private File file;
@@ -76,7 +79,7 @@ public class Message {
      */
     @Column(nullable = false, updatable = false)
     @CreationTimestamp
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     /**
      * Soft delete flag to allow message recovery.
@@ -186,11 +189,11 @@ public class Message {
         this.messageType = messageType;
     }
 
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(LocalDateTime timestamp) {
+    public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
 

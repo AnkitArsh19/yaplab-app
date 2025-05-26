@@ -1,4 +1,4 @@
-package com.yaplab.authentication;
+package com.yaplab.security.authentication.passwordreset;
 
 import com.yaplab.user.User;
 import jakarta.persistence.*;

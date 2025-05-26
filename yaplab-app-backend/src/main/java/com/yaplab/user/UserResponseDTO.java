@@ -1,25 +1,29 @@
 package com.yaplab.user;
 
 import com.yaplab.enums.UserStatus;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
+
+import java.time.Instant;
 
 /**
  * A Response DTO to send the response from the server to the client.
  * Only sends required information by not exposing the whole Entity.
- * Fields are marked as not empty to check for null and emptiness.
  * @param id UserId of the user
  * @param userName UserName of the user with constraints
  * @param emailId EmailId of the user
- * @param mobileNumber MobileNumber of the user.
- * @param userStatus The current status of the user.
+ * @param mobileNumber MobileNumber of the user
+ * @param userStatus The current status of the user
+ * @param profilePictureUrl The profile picture url of the user
+ * @param createdAt The time when the user registered
+ * @param updatedAt The time when user last updated the personal details
  */
 public record UserResponseDTO(
-       @NotNull  Long id,
-       @NotEmpty String userName,
-       @NotEmpty String emailId,
-       @NotEmpty String mobileNumber,
+       Long id,
+       String userName,
+       String emailId,
+       String mobileNumber,
        UserStatus userStatus,
-       String profilePictureUrl
+       String profilePictureUrl,
+       Instant createdAt,
+       Instant updatedAt
 ) {
 }

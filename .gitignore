@@ -1,0 +1,16 @@
+gitignore
+# IntelliJ IDEA project files
+.idea/
+*.iml
+
+# Build artifacts (root level)
+target/
+
+# Build artifacts (Java backend)
+yaplab-app-backend/target/
+
+# Build artifacts (Node.js/frontend - if applicable)
+yaplab-app-frontend/dist/
+yaplab-app-frontend/build/
+yaplab-app-frontend/node_modules/
+

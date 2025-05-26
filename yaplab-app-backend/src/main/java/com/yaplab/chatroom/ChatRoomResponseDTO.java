@@ -4,7 +4,7 @@ import com.yaplab.enums.ChatRoomType;
 import com.yaplab.group.GroupResponseDTO;
 import com.yaplab.user.UserResponseDTO;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record ChatRoomResponseDTO(
@@ -12,6 +12,6 @@ public record ChatRoomResponseDTO(
         ChatRoomType chatRoomType,
         List<UserResponseDTO> participants,
         GroupResponseDTO group,
-        LocalDateTime lastActivity
+        Instant lastActivity
 ) {
 }

@@ -10,6 +10,7 @@ import com.yaplab.user.UserRepository;
 import com.yaplab.user.UserService;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -140,7 +141,7 @@ public class ChatRoomService {
     public void updateLastActivity(String chatroomId){
         ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
                 .orElseThrow(() -> new RuntimeException("Chatroom not found"));
-        chatRoom.setLastActivity(LocalDateTime.now());
+        chatRoom.setLastActivity(Instant.now());
         chatRoomMapper.chatRoomResponseDTO(chatRoomRepository.save(chatRoom));
     }
 }
