@@ -62,13 +62,13 @@ public class UserService {
         user.setCreatedAt(Instant.now());
         userRepository.save(user);
         String token = UUID.randomUUID().toString();
-        Instant expiry = Instant.now().plusSeconds(86400); // Example: Token valid for 24 hours
+        Instant expiry = Instant.now().plusSeconds(1800);
         EmailVerificationToken verificationToken = new EmailVerificationToken();
         verificationToken.setToken(token);
         verificationToken.setExpiryDate(expiry);
         verificationToken.setUser(user);
         emailVerificationTokenRepository.save(verificationToken);
-        String verificationLink = "http://localhost:8080/verify-email?token=" + token; // Update URL as needed
+        String verificationLink = "http://localhost:8080/verify-email?token=" + token;
         emailService.sendVerificationEmail(user.getEmailId(), verificationLink);
         emailService.sendWelcomeEmail(user.getEmailId(), user.getUserName());
         return userMapper.toRegisterResponseDTO(user);
