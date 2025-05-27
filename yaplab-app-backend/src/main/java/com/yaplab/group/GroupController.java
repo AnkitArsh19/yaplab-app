@@ -49,6 +49,26 @@ public class GroupController {
         return ResponseEntity.ok("User added successfully.");
     }
 
+    /**
+     * Removes a user from the group entity.
+     * @param groupId ID of the group.
+     * @param userId  ID of the user to remove.
+     * @return Response Entity indicating successful removal.
+     */
+    @DeleteMapping("/removeuser")
+    public ResponseEntity<String> removeUser(
+            @RequestParam Long userId,
+            @RequestParam Long groupId
+    ){
+        groupService.removeUser(userId, groupId);
+        return ResponseEntity.ok("User removed successfully.");
+    }
+
+    /**
+     * This method is used to upload a new profile picture for the group.
+     * @param id GroupId of the group
+     * @param file File uploaded by the user
+     */
     @PostMapping("/{id}/profile-picture")
     public ResponseEntity<Void> uploadProfilePicture(
             @PathVariable Long id,

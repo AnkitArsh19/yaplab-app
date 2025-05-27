@@ -12,6 +12,7 @@ import com.yaplab.security.token.RefreshTokenRepository;
 import com.yaplab.user.User;
 import com.yaplab.user.UserMapper;
 import com.yaplab.user.UserRepository;
+import com.yaplab.user.UserService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotEmpty;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,8 +38,9 @@ public class AuthenticationService {
     private final PasswordResetTokenRepository resetTokenRepository;
     private final EmailService emailService;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final UserService userService;
 
-    public AuthenticationService(JWTService jwtService, UserRepository userRepository, RefreshTokenRepository refreshTokenRepository, AuthenticationManager authManager, UserMapper userMapper, PasswordEncoder passwordEncoder, PasswordResetTokenRepository resetTokenRepository, EmailService emailService, EmailVerificationTokenRepository emailVerificationTokenRepository) {
+    public AuthenticationService(JWTService jwtService, UserRepository userRepository, RefreshTokenRepository refreshTokenRepository, AuthenticationManager authManager, UserMapper userMapper, PasswordEncoder passwordEncoder, PasswordResetTokenRepository resetTokenRepository, EmailService emailService, EmailVerificationTokenRepository emailVerificationTokenRepository, UserService userService) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -48,6 +50,7 @@ public class AuthenticationService {
         this.resetTokenRepository = resetTokenRepository;
         this.emailService = emailService;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+        this.userService = userService;
     }
 
     /**
@@ -63,6 +66,9 @@ public class AuthenticationService {
     public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO) {
         User user = userRepository.findByEmailId(loginRequestDTO.emailId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (!user.isEmailVerified()) {
+            throw new IllegalArgumentException("Email not verified");
+        }
         Authentication authentication =
                 authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmailId(), loginRequestDTO.password()));
         if (!authentication.isAuthenticated()) {
@@ -88,7 +94,9 @@ public class AuthenticationService {
                 Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findByUserAndRevokedFalse(user).stream().findFirst();
                 refreshTokenOptional.ifPresent(refreshToken -> {
                     refreshToken.setRevoked(true);
-                    refreshTokenRepository.save(refreshToken);                });
+                    refreshTokenRepository.save(refreshToken);
+                });
+                userService.disconnect(user.getId());
             });
         }
     }
@@ -106,6 +114,7 @@ public class AuthenticationService {
     public void changePassword(PasswordChangeRequestDTO request){
         User user = userRepository.findByEmailId(request.emailId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found with the emailId" + request.emailId()));
+
         if(!passwordEncoder.matches(request.oldPassword(), user.getPassword())){
             throw new IllegalArgumentException("Old Password is incorrect");
         }
@@ -124,7 +133,6 @@ public class AuthenticationService {
         User user = verificationToken.getUser();
         user.setEmailVerified(true);
         userRepository.save(user);
-
         emailVerificationTokenRepository.delete(verificationToken);
     }
 

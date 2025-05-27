@@ -1,5 +1,6 @@
 package com.yaplab.user;
 
+import com.yaplab.enums.UserStatus;
 import jakarta.validation.Valid;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,6 +36,8 @@ public class UserController {
 
     /**
      * This method is called when a user disconnects from the WebSocket.
+     * Payload expects a user id.
+     * It is then broadcasted to every member of /topic/status that the user is diconnected.
      * @param userId ID of the user to disconnect.
      * @return UserResponseDTO containing the updated user details.
      */
@@ -109,7 +113,9 @@ public class UserController {
     }
 
     /**
-     * This method is used to handle WebSocket disconnect events.
+     * This method is used to handle WebSocket disconnect events which can be unintentional.
+     * Header accessor contains metadata of the disconnect event.
+     * If session attributes are not null, get the user ID.
      * It listens for SessionDisconnectEvent and updates the user's status to offline.
      * @param event The SessionDisconnectEvent containing the session attributes.
      */
@@ -135,5 +141,40 @@ public class UserController {
             ){
         userService.updateProfilePicture(id, file);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Finds a list of connected or disconnected users.
+     * @param status the status to get the list
+     * @return a list of userResponseDTO
+     */
+    @GetMapping("/list/{status}")
+    public ResponseEntity<List<UserResponseDTO>> findConnectedOrDisconnectedUsers(
+            @PathVariable UserStatus status
+            ){
+        List<UserResponseDTO> list = userService.findConnectedOrDisconnectedUsers(status);
+        return ResponseEntity.ok(list);
+    }
+
+    /**
+     * This method retrieves the creation date of a user by their ID.
+     * @param id ID of the user.
+     * @return The Instant representing the creation date.
+     */
+    @GetMapping("/{id}/creation-date")
+    public ResponseEntity<Instant> getUserCreationDate(@PathVariable Long id) {
+        Instant creationDate = userService.getUserCreationDate(id);
+        return ResponseEntity.ok(creationDate);
+    }
+
+    /**
+     * This method retrieves the last update date of a user by their ID.
+     * @param id ID of the user.
+     * @return The Instant representing the last update date.
+     */
+    @GetMapping("/{id}/last-update-date")
+    public ResponseEntity<Instant> getUserLastUpdateDate(@PathVariable Long id) {
+        Instant lastUpdateDate = userService.getUserLastUpdateDate(id);
+        return ResponseEntity.ok(lastUpdateDate);
     }
 }

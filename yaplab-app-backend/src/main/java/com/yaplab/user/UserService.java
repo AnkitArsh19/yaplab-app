@@ -1,8 +1,8 @@
 package com.yaplab.user;
 
-import com.yaplab.security.authentication.*;
-import com.yaplab.enums.UserStatus;
 import com.resend.core.exception.ResendException;
+import com.yaplab.enums.UserStatus;
+import com.yaplab.security.authentication.*;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +45,8 @@ public class UserService {
      * Registers a new user and saves to the database.
      * Does not register an existing user in the database.
      * Password is encoded and saved in the database using password encoder.
+     * A random token is generated which expires in 30 minutes and sent to the user's email ID for verification.
+     * The user also receives a welcome email.
      * @param registerRequestDTO A DTO with fields given by user to register
      * @throws ResendException when email could not be sent after registration
      * @return A responseDTO sent in response
@@ -129,7 +130,6 @@ public class UserService {
      * Gets the user by the given emailId for recovery purpose.
      * @param emailId EmailId of the user.
      * @return the User found.
-     * @throws IllegalArgumentException if user is not found.
      */
     public UserResponseDTO getUserByEmail(String emailId) {
         return userMapper.toResponseDTO(userRepository.findByEmailId(emailId)
@@ -139,6 +139,7 @@ public class UserService {
     /**
      * Updates the required details of the user and saves in the database.
      * This method is used to update user details such as username, emailId, and mobile number.
+     * Sets the updated time to the current time.
      * @param userDTO The updated user to save details to.
      * @return the old user with updated details.
      * @throws IllegalArgumentException if user is not found or email already in use.
@@ -170,14 +171,12 @@ public class UserService {
      * Deletes the user from the database for privacy and storage management.
      * This method is used to remove a user from the system.
      * @param id ID of the user to delete.
-     * @throws IllegalArgumentException if user is not found.
      */
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new IllegalArgumentException("User not found with ID: " + id);
         }
         userRepository.deleteById(id);
-
     }
 
     /**
@@ -185,7 +184,7 @@ public class UserService {
      * @param status status of the user
      * @return the list of user response DTO object.
      */
-    public List<UserResponseDTO> findConnectedUsers(UserStatus status) {
+    public List<UserResponseDTO> findConnectedOrDisconnectedUsers(UserStatus status) {
         return userRepository.findByStatus(status)
                 .stream()
                 .map(userMapper::toResponseDTO)
@@ -196,6 +195,8 @@ public class UserService {
      * Updates the profile picture url with the file stored in the "uploads" folder.
      * Checks that the file size does not exceed 5MB and are of type png/jpeg/jpg.
      * Maintains consistent naming of all pictures.
+     * Tries to create a parent directory if it doesn't exist
+     * Uploads the file to the directory.
      * @param userId The user id of the person who wants to update profile picture.
      * @param file The file uploaded by the user.
      */

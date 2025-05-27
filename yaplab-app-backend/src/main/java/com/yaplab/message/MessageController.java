@@ -4,92 +4,91 @@ import com.yaplab.enums.MessageStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * REST Controller for handling messaging operations.
- * Provides endpoints for sending, retrieving, updating, and deleting messages.
+ * Controller for handling messaging operations via REST and WebSocket.
  */
 @Controller
 @RequestMapping("/messages")
 public class MessageController {
 
     /**
-     * Constructor based dependency injection of Message Service, User Service, Group Service.
+     * Constructor based dependency injection
      */
     private final MessageService messageService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public MessageController(
-            MessageService messageService) {
+            MessageService messageService,
+            SimpMessagingTemplate messagingTemplate) {
         this.messageService = messageService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     /**
      * Handles incoming WebSocket messages to update a message's status to DELIVERED.
-     * @return A map containing the messageId and the new status.
+     * Sends this to the topic so people subscribed to it also get notified.
+     * @param messageId ID of the message
      */
     @MessageMapping("/status/delivered")
-    @SendTo("/topic/messages") // Or a chatroom-specific topic
-    public Map<String, Object> handleDeliveredStatusUpdate(@Payload Long messageId) {
+    public void handleDeliveredStatusUpdate(@Payload Long messageId) {
         messageService.updateMessageStatus(messageId, MessageStatus.DELIVERED);
-        return createStatusUpdatePayload(messageId, MessageStatus.DELIVERED);
+        messagingTemplate.convertAndSend("/topic/messages/status", createStatusUpdatePayload(messageId, MessageStatus.DELIVERED));
     }
+
     /**
      * Handles incoming WebSocket messages to update a message's status to READ.
-     * @return A map containing the messageId and the new status.
+     * Sends this to the topic so people subscribed to it also get notified.
+     * @param messageId ID of the message
      */
     @MessageMapping("/status/read")
-    @SendTo("/topic/messages") // Or a chatroom-specific topic
-    public Map<String, Object> handleReadStatusUpdate(@Payload Long messageId) {
+    public void handleReadStatusUpdate(@Payload Long messageId) {
         messageService.updateMessageStatus(messageId, MessageStatus.READ);
-        return createStatusUpdatePayload(messageId, MessageStatus.READ);
+        messagingTemplate.convertAndSend("/topic/messages/status", createStatusUpdatePayload(messageId, MessageStatus.READ));
     }
 
     /**
-     * This method sends a personal message between two users.
-     * @param messageDTO The DTO containing message details such as sender, receiver, content, etc.
-     * @return ResponseEntity indicating success or failure.
+     * Sends a personal message via WebSocket to the appropriate chatroom topic.
+     * @param messageDTO the message DTO coming from the client.
      */
     @MessageMapping("/personal")
-    @GetMapping("/topic/messages")
-    public MessageResponseDTO personalMessage(
-            @Payload MessageDTO messageDTO
-    ){
-        return messageService.sendPersonalMessage(messageDTO);
-    }
-    
-    /**
-     * This method sends a message in a group.
-     * @param messageDTO The DTO containing message details such as sender, group ID, content, etc.
-     * @return ResponseEntity indicating success or failure.
-     */
-    @MessageMapping("/group")
-    public MessageResponseDTO groupMessage(
-            @Payload MessageDTO messageDTO
-    ){
-        return messageService.sendGroupMessage(messageDTO);
+    public void personalMessage(@Payload MessageDTO messageDTO) {
+        MessageResponseDTO response = messageService.sendPersonalMessage(messageDTO);
+        String chatroomId = response.chatRoomId();
+        messagingTemplate.convertAndSend("/topic/chat/" + chatroomId, response);
     }
 
     /**
-     * Sends a reply message to an existing message via WebSocket.
-     * @return The created MessageResponseDTO.
+     * Sends a group message via WebSocket to the appropriate chatroom topic.
+     * @param messageDTO the message DTO coming from the client.
+     */
+    @MessageMapping("/group")
+    public void groupMessage(@Payload MessageDTO messageDTO) {
+        MessageResponseDTO response = messageService.sendGroupMessage(messageDTO);
+        String chatroomId = response.chatRoomId(); // Ensure your DTO has this field
+        messagingTemplate.convertAndSend("/topic/chat/" + chatroomId, response);
+    }
+
+    /**
+     * Sends a reply message via WebSocket to the appropriate chatroom topic.
+     * @param messageDTO the message DTO coming from the client.
      */
     @MessageMapping("/reply")
-    @SendTo("/topic/messages")
-    public MessageResponseDTO sendReplyMessageViaWebSocket(
-            @Payload MessageDTO messageDTO) {
-        return messageService.sendReplyMessage(messageDTO, messageDTO.repliedToMessageId());
+    public void sendReplyMessageViaWebSocket(@Payload MessageDTO messageDTO) {
+        MessageResponseDTO response = messageService.sendReplyMessage(messageDTO, messageDTO.repliedToMessageId());
+        String chatroomId = response.chatRoomId();
+        messagingTemplate.convertAndSend("/topic/chat/" + chatroomId, response);
     }
 
     /**
      * Sends a reply message to an existing message.
-     * @return ResponseEntity with the created MessageResponseDTO.
+     * @param messageDTO the message DTO coming from the client.
      */
     @PostMapping("/reply")
     public ResponseEntity<MessageResponseDTO> sendReplyMessage(
@@ -98,60 +97,19 @@ public class MessageController {
     }
 
     /**
-     * This method retrieves messages sent between two users.
-     * @param senderId   ID of the sender.
-     * @param receiverId ID of the receiver.
-     * @return ResponseEntity with a list of messages or an empty entity.
-     */
-    @GetMapping("/personal/{senderId}/{receiverId}")
-    public ResponseEntity<List<MessageResponseDTO>> getPersonalMessageList(
-            @PathVariable Long senderId,
-            @PathVariable Long receiverId
-    ){
-        List<MessageResponseDTO> messages = messageService.getMessageBetweenUsers(senderId, receiverId);
-        if(messages.isEmpty()){
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(messages);
-    }
-
-    /**
-     * This method retrieves messages sent in a group.
-     * @param groupId   ID of the group.
-     * @return ResponseEntity with a list of messages or an empty entity.
-     */
-    @GetMapping("/group/{groupId}")
-    public ResponseEntity<List<MessageResponseDTO>> getGroupMessageList(
-            @PathVariable Long groupId
-    ){
-        List<MessageResponseDTO> messages = messageService.getMessageOfGroups(groupId);
-        if(messages.isEmpty()){
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(messages);
-    }
-
-    /**
-     * This method is used to update the status of a message based on its ID.
-     * @param messageId  ID of the message.
-     * @param status    new status of the message.
-     * @return ResponseEntity with a response of successful update.
+     * Updates the status of a message based on its ID.
      */
     @PatchMapping("/{messageId}/status/{status}")
     public ResponseEntity<String> updateMessageStatus(
             @PathVariable Long messageId,
-            @RequestParam MessageStatus status
+            @PathVariable MessageStatus status
     ){
         messageService.updateMessageStatus(messageId, status);
         return ResponseEntity.ok("Status Updated to " + status);
     }
 
     /**
-     * This method soft deletes a message.
-     * @param messageId ID of the message.
-     * @return ResponseEntity with no content.
+     * Soft deletes a message.
      */
     @DeleteMapping("/{messageId}")
     public ResponseEntity<Void> deleteMessage(
@@ -161,6 +119,12 @@ public class MessageController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Creates a payload for message status updates.
+     * @param messageId ID of the message
+     * @param status Status of the message
+     * @return Map containing the message ID and status
+     */
     private Map<String, Object> createStatusUpdatePayload(Long messageId, MessageStatus status) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("messageId", messageId);

@@ -57,6 +57,9 @@ public class Group {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    /**
+     * Url of the profile picture stored.
+     */
     @Column(name = "profile-picture-url")
     private String profilePictureUrl;
 

@@ -5,6 +5,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.stream.Collectors;
 
+/**
+ * Service layer to map group from DTOs to entities and vice versa.
+ */
 @Service
 public class GroupMapper {
 

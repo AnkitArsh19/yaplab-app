@@ -18,9 +18,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Security configuration class for the YapLab application.
+ * This class configures security settings, including authentication and authorization.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig{
+
 
     private final UserDetailsService userDetailsService;
     private final JWTFilter jwtFilter;
@@ -29,6 +34,12 @@ public class SecurityConfig{
         this.userDetailsService = userDetailsService;
         this.jwtFilter = jwtFilter;
     }
+
+    /*
+     * Configures the security filter chain for the application.
+     * This method sets up CSRF protection, authorization rules, session management,
+     * and adds the JWT filter to the security chain.
+     */
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -42,21 +53,41 @@ public class SecurityConfig{
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.
                         sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                //Before UsernamePasswordAuthenticationFilter add jwtFilter
+
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
+    /**
+     * Bean for password encoding using BCrypt.
+     * This encoder is used to hash passwords securely.
+     *
+     * @return a BCryptPasswordEncoder instance
+     */
     @Bean
     public BCryptPasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder(12);
     };
 
+    /**
+     * Bean for authentication manager.
+     * This manager is used to handle authentication requests.
+     *
+     * @param configuration the authentication configuration
+     * @return an AuthenticationManager instance
+     * @throws Exception if an error occurs during authentication manager creation
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
+    /**
+     * Bean for authentication provider.
+     * This provider uses the user details service and password encoder for authentication.
+     *
+     * @return an AuthenticationProvider instance
+     */
     @Bean
     public AuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();

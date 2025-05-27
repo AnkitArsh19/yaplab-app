@@ -13,9 +13,10 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
     /**
-     * Finds list of messages by chatRoomId
-     * @param chatroomId The chatRoomId.
+     * Finds all messages for a given chatroom that are not soft-deleted.
+     * @param chatroomId The ID of the chatroom.
+     * @return A list of non-soft-deleted messages in the chatroom.
      */
-    List<Message> findByChatroom_ChatroomId(String chatroomId);
+    List<Message> findByChatroom_ChatroomIdAndSoftDeletedFalse(String chatroomId);
 
 }

@@ -17,16 +17,16 @@ import java.nio.file.Paths;
 @Service
 public class FileService {
     private final FileMapper fileMapper;
-    private final FilesRepository filerepo;
+    private final FilesRepository filesRepository;
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;
     private final UserService userService;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
-    public FileService(FileMapper fileMapper, FilesRepository filerepo, UserService userService) {
+    public FileService(FileMapper fileMapper, FilesRepository filesRepository, UserService userService) {
         this.fileMapper = fileMapper;
-        this.filerepo = filerepo;
+        this.filesRepository = filesRepository;
         this.userService = userService;
     }
 
@@ -50,14 +50,14 @@ public class FileService {
                 null,
                 userService.getUserEntityByID(id)
         );
-        File savedFile = filerepo.save(files);
+        File savedFile = filesRepository.save(files);
         savedFile.setFileUrl("/file/download/" + savedFile.getId());
-        filerepo.save(savedFile);
+        filesRepository.save(savedFile);
         return fileMapper.toFileUploadResponseDTO(savedFile);
     }
 
     public Resource downloadFile(Long fileId) throws IOException {
-        File file = filerepo.findById(fileId)
+        File file = filesRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("File not found with ID: " + fileId));
         Path filePath = Paths.get(uploadDir).resolve(file.getFileName());
 
@@ -71,19 +71,19 @@ public class FileService {
     }
 
     public void deleteFile(Long id) throws IOException {
-        File file = filerepo.findById(id)
+        File file = filesRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("File not found"));
         Path filePath = Paths.get(uploadDir).resolve(file.getFileName());
         try {
             Files.deleteIfExists(filePath);
-            filerepo.delete(file);
+            filesRepository.delete(file);
         } catch (IOException e) {
             throw new IOException("Failed to delete file on disk: " + file.getFileName(), e);
         }
     }
 
     public FileUploadResponseDTO getFileInfo(Long id){
-        File file = filerepo.findById(id)
+        File file = filesRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("File not found"));
         return fileMapper.toFileUploadResponseDTO(file);
     }

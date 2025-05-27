@@ -29,14 +29,12 @@ public class FileController {
     ) {
         try {
             FileUploadResponseDTO fileInfo = fileService.getFileInfo(fileId);
-            Resource resource = fileService.downloadFile(fileId); // FileService now returns Resource
+            Resource resource = fileService.downloadFile(fileId);
 
-            // Determine content type
-            Path filePath = Paths.get(fileService.getUploadDir()).resolve(fileInfo.fileName()); // Get path to probe content type
+            Path filePath = Paths.get(fileService.getUploadDir()).resolve(fileInfo.fileName());
             String contentType = Files.probeContentType(filePath);
 
             HttpHeaders headers = new HttpHeaders();
-            // Corrected Content-Disposition header
             headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileInfo.fileName() + "\"");
 
             return ResponseEntity.ok()
@@ -45,12 +43,11 @@ public class FileController {
                     .body(resource);
 
         } catch (FileNotFoundException e) {
-            return ResponseEntity.notFound().build(); // 404 Not Found
+            return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
-            // This would catch the "File not found with ID" from FileService
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404 Not Found with no body
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null); // 500 Internal Server Error
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
@@ -63,7 +60,7 @@ public class FileController {
             FileUploadResponseDTO response = fileService.uploadFile(file, userId);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null); // e.g., file size exceeds limit
+            return ResponseEntity.badRequest().body(null);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
@@ -77,7 +74,7 @@ public class FileController {
             fileService.deleteFile(fileId);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // 404 Not Found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -91,7 +88,7 @@ public class FileController {
             FileUploadResponseDTO fileInfo = fileService.getFileInfo(fileId);
             return ResponseEntity.ok(fileInfo);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 404 Not Found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 }

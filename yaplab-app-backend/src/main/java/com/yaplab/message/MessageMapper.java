@@ -70,6 +70,7 @@ public class MessageMapper {
 
     /**
      * Converts a Message entity to a MessageResponseDTO.
+     * Handles files and message replies
      * @param message The message entity to convert.
      * @return A MessageResponseDTO containing the message details.
      */
@@ -116,7 +117,8 @@ public class MessageMapper {
             uploadedByUserId,
             uploadedByUserName,
             fileType,
-            repliedToMessageDTO
+            repliedToMessageDTO,
+            message.getChatroom().getChatroomId()
         );
     }
 }

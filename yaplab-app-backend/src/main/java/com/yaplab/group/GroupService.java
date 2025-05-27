@@ -1,7 +1,9 @@
 package com.yaplab.group;
 
+import com.yaplab.chatroom.ChatRoomService;
 import com.yaplab.user.User;
 import com.yaplab.user.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,11 +24,13 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final GroupMapper groupMapper;
+    private final ChatRoomService chatRoomService;
 
-    public GroupService(GroupRepository groupRepository, UserRepository userRepository, GroupMapper groupMapper) {
+    public GroupService(GroupRepository groupRepository, UserRepository userRepository, GroupMapper groupMapper, ChatRoomService chatRoomService) {
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
         this.groupMapper = groupMapper;
+        this.chatRoomService = chatRoomService;
     }
 
     /**
@@ -41,9 +45,9 @@ public class GroupService {
     /**
      * Creates a new group and saves it in the database.
      * @param createdById The id of the user who created the group.
-     * @throws RuntimeException if the user is not found.
      * @return The created group.
      */
+    @Transactional
     public GroupResponseDTO createGroup(GroupDTO groupDTO, Long createdById){
         User creator = userRepository.findById(createdById)
                 .orElseThrow(()->new RuntimeException("User not found with the id: " + createdById));
@@ -64,9 +68,8 @@ public class GroupService {
      * Adds users to the group and saves it in the database.
      * @param userId   The user being added.
      * @param groupId  The group to add the user in.
-     * @throws RuntimeException  If the user is not found.
-     * @throws RuntimeException  If the group is not found.
      */
+    @Transactional
     public void addUsers(Long userId, Long groupId){
         User user = userRepository.findById(userId)
                 .orElseThrow(()->new RuntimeException("User not found"));
@@ -75,8 +78,41 @@ public class GroupService {
 
         group.getUsers().add(user);
         groupRepository.save(group);
+
+        String chatRoomId = "group_" + groupId;
+        chatRoomService.addParticipantsInGroup(chatRoomId, groupId);
     }
 
+    /**
+     * Removes users from the group and updates the database.
+     * @param userId   The user being added.
+     * @param groupId  The group to add the user in.
+     */
+    @Transactional
+    public void removeUser(Long userId, Long groupId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        group.getUsers().remove(user);
+        groupRepository.save(group);
+
+        String chatRoomId = "group_" + groupId;
+        chatRoomService.removeParticipantsInGroup(chatRoomId, groupId);
+    }
+
+
+    /**
+     * Updates the profile picture url with the file stored in the "uploads" folder.
+     * Checks that the file size does not exceed 5MB and are of type png/jpeg/jpg.
+     * Maintains consistent naming of all pictures.
+     * Tries to create a parent directory if it doesn't exist
+     * Uploads the file to the directory.
+     * @param groupId The group whose picture is being updated
+     * @param file The file uploaded by the user.
+     */
+    @Transactional
     public void updateProfilePicture(Long groupId, MultipartFile file){
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -106,6 +142,4 @@ public class GroupService {
         group.setProfilePictureUrl("/uploads/" + fileName);
         groupRepository.save(group);
     }
-
-
 }

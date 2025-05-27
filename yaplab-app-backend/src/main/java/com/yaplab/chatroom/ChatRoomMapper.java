@@ -9,8 +9,15 @@ import org.springframework.stereotype.Service;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Service layer to map chatroom from DTOs to entities and vice versa.
+ */
 @Service
 public class ChatRoomMapper {
+    /**
+     * Returns a chatroomResponseDTO from chatroom object
+     * @param chatRoom the chatroom object
+     */
     public ChatRoomResponseDTO chatRoomResponseDTO(ChatRoom chatRoom){
         if (chatRoom == null){
             return null;
@@ -25,9 +32,7 @@ public class ChatRoomMapper {
                                 user.getEmailId(),
                                 user.getMobileNumber(),
                                 user.getStatus(),
-                                user.getProfilePictureUrl(),
-                                user.getCreatedAt(),
-                                user.getUpdatedAt()
+                                user.getProfilePictureUrl()
                         ))
                         .collect(Collectors.toList()),
                 chatRoom.getGroup() != null ? new GroupResponseDTO(
@@ -39,14 +44,5 @@ public class ChatRoomMapper {
                 ) : null,
                 chatRoom.getLastActivity()
         );
-    }
-
-    public ChatRoom toChatRoom(ChatRoomDTO chatRoomDTO, Group group, Set<User> participants){
-        if(chatRoomDTO == null){
-            return null;
-        }
-        ChatRoom chatRoom = new ChatRoom(chatRoomDTO.chatroomId(), group, participants);
-        chatRoom.setChatroomType(chatRoomDTO.chatRoomType());
-        return chatRoom;
     }
 }

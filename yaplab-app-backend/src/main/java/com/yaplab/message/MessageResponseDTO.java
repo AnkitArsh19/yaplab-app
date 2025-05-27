@@ -7,7 +7,6 @@ import java.time.Instant;
 /**
  * A Response DTO to send the response from the server to the client.
  * Only sends required information by not exposing the whole Entity.
- * Fields are marked as not empty to check for null and emptiness.
  * @param id id if the message
  * @param senderName sender of the message
  * @param content content of the message
@@ -33,9 +32,13 @@ public record MessageResponseDTO (
         Long uploadedByUserId,
         String uploadedByUserName,
         String fileType,
-        RepliedToMessageDTO repliedToMessage
+        RepliedToMessageDTO repliedToMessage,
+        String chatRoomId
 ){
 
+    /**
+     * Replied to message DTO to receive details about reply
+     */
     public record RepliedToMessageDTO(
             Long id,
             String senderName,
