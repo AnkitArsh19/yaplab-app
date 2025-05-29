@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * Repository interface to manage Groups entity.
+ * Repository interface to manage Message entity.
  * Extends JPARepository to perform CRUD operations.
  */
 @Repository

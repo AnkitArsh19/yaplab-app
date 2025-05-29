@@ -4,6 +4,8 @@ import com.resend.core.exception.ResendException;
 import com.yaplab.enums.UserStatus;
 import com.yaplab.security.authentication.*;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +25,13 @@ import java.util.stream.Collectors;
  */
 @Service
 public class UserService {
+
+    /**
+     * Logger for UserService
+     * This logger is used to log various events and errors in the UserService class.
+     * It helps in debugging and tracking the flow of operations related to user management.
+     */
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     /**
      * Constructor based dependency injection
@@ -53,11 +62,12 @@ public class UserService {
      */
     @Transactional
     public RegisterResponseDTO registerUser(RegisterRequestDTO registerRequestDTO) throws ResendException {
-        User user = userMapper.toEntityFromRegisterRequest(registerRequestDTO);
-        Optional<User> userExists = userRepository.findByEmailId(user.getEmailId());
+        Optional<User> userExists = userRepository.findByEmailId(registerRequestDTO.emailId());
         if (userExists.isPresent()) {
+            logger.warn("Registration failed: User already exists with email {}", registerRequestDTO.emailId());
             throw new IllegalArgumentException("User already exists with the given email id");
         }
+        User user = userMapper.toEntityFromRegisterRequest(registerRequestDTO);
         user.setStatus(UserStatus.OFFLINE);
         user.setPassword(passwordEncoder.encode(registerRequestDTO.password()));
         user.setCreatedAt(Instant.now());
@@ -69,9 +79,10 @@ public class UserService {
         verificationToken.setExpiryDate(expiry);
         verificationToken.setUser(user);
         emailVerificationTokenRepository.save(verificationToken);
-        String verificationLink = "http://localhost:8080/verify-email?token=" + token;
+        String verificationLink = "http://localhost:8080/auth/verify-email?token=" + token;
         emailService.sendVerificationEmail(user.getEmailId(), verificationLink);
         emailService.sendWelcomeEmail(user.getEmailId(), user.getUserName());
+        logger.info("User registered: {}", user.getEmailId());
         return userMapper.toRegisterResponseDTO(user);
     }
 
@@ -85,6 +96,7 @@ public class UserService {
         userRepository.findById(userId).ifPresent(user -> {
             user.setStatus(UserStatus.OFFLINE);
             userRepository.save(user);
+            logger.info("User disconnected: {}", user.getEmailId());
         });
     }
 
@@ -95,8 +107,12 @@ public class UserService {
      * @return The User of that id or null if user is not found
      */
     public UserResponseDTO getUserByID(Long id) {
-        return userMapper.toResponseDTO(userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found")));
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    logger.warn("User not found with ID: {}", id);
+                    return new IllegalArgumentException("User not found");
+                });
+        return userMapper.toResponseDTO(user);
     }
 
     /**
@@ -106,7 +122,10 @@ public class UserService {
      */
     public User getUserEntityByID(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> {
+                    logger.warn("User not found with ID: {}", id);
+                    return new IllegalArgumentException("User not found");
+                });
     }
 
     /**
@@ -120,6 +139,7 @@ public class UserService {
         List<User> users = userRepository.findDistinctByUserNameIgnoreCaseOrEmailIdIgnoreCaseOrMobileNumber(
                 input, input, input
         );
+        logger.info("User search performed for input: {}", input);
         return users
                 .stream()
                 .map(userMapper::toResponseDTO)
@@ -132,8 +152,24 @@ public class UserService {
      * @return the User found.
      */
     public UserResponseDTO getUserByEmail(String emailId) {
-        return userMapper.toResponseDTO(userRepository.findByEmailId(emailId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with the emailId: " + emailId)));
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> {
+                    logger.warn("User not found with email: {}", emailId);
+                    return new IllegalArgumentException("User not found with the emailId: " + emailId);
+                });
+        return userMapper.toResponseDTO(user);
+    }
+
+    /**
+     * Returns user entity from the email provided
+     * @param emailId email ID of the user
+     */
+    public User getUserEntityByEmail(String emailId) {
+        return userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> {
+                    logger.warn("User not found with email: {}", emailId);
+                    return new IllegalArgumentException("User not found with the emailId: " + emailId);
+                });
     }
 
     /**
@@ -146,12 +182,16 @@ public class UserService {
      */
     public UserResponseDTO updateUser(UserDTO userDTO) {
         User oldUser = userRepository.findById(userDTO.id())
-                .orElseThrow(() -> new IllegalArgumentException("User not found with the id" + userDTO.id()));
+                .orElseThrow(() -> {
+                    logger.warn("User not found with ID: {}", userDTO.id());
+                    return new IllegalArgumentException("User not found with the id" + userDTO.id());
+                });
 
         if (userDTO.emailId() != null && !userDTO.emailId().equals(oldUser.getEmailId())) {
             userRepository.findByEmailId(userDTO.emailId())
                     .ifPresent(user -> {
-                        throw new IllegalArgumentException("Email - " + userDTO.emailId() + "already in use");
+                        logger.warn("Email already in use: {}", userDTO.emailId());
+                        throw new IllegalArgumentException("Email - " + userDTO.emailId() + " already in use");
                     });
         }
         if (userDTO.userName() != null)
@@ -163,9 +203,9 @@ public class UserService {
         User updatedUser = userMapper.toEntityFromDTO(userDTO);
         updatedUser.setId(oldUser.getId());
         updatedUser.setUpdatedAt(Instant.now());
+        logger.info("User updated: {}", oldUser.getEmailId());
         return userMapper.toResponseDTO(userRepository.save(oldUser));
     }
-
 
     /**
      * Deletes the user from the database for privacy and storage management.
@@ -174,9 +214,11 @@ public class UserService {
      */
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
+            logger.warn("Delete failed: User not found with ID: {}", id);
             throw new IllegalArgumentException("User not found with ID: " + id);
         }
         userRepository.deleteById(id);
+        logger.info("User deleted with ID: {}", id);
     }
 
     /**
@@ -185,6 +227,7 @@ public class UserService {
      * @return the list of user response DTO object.
      */
     public List<UserResponseDTO> findConnectedOrDisconnectedUsers(UserStatus status) {
+        logger.info("Finding users with status: {}", status);
         return userRepository.findByStatus(status)
                 .stream()
                 .map(userMapper::toResponseDTO)
@@ -202,18 +245,23 @@ public class UserService {
      */
     public void updateProfilePicture(Long userId, MultipartFile file) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> {
+                    logger.warn("Profile picture update failed: User not found with ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
 
         String contentType = file.getContentType();
         if (contentType == null ||
                 !(contentType.equalsIgnoreCase("image/jpeg") ||
                         contentType.equalsIgnoreCase("image/jpg") ||
                         contentType.equalsIgnoreCase("image/png"))) {
+            logger.warn("Profile picture update failed: Invalid file type for user {}", userId);
             throw new IllegalArgumentException("Only JPEG, JPG, and PNG files are allowed.");
         }
         long maxSize = 5 * 1024 * 1024; // 5MB
 
         if (file.getSize() > maxSize) {
+            logger.warn("Profile picture update failed: File too large for user {}", userId);
             throw new IllegalArgumentException("File size must not exceed 5MB.");
         }
         String uploadsDir = "/uploads";
@@ -223,10 +271,12 @@ public class UserService {
             Files.createDirectories(filePath.getParent());
             file.transferTo(filePath.toFile());
         } catch (IOException e) {
+            logger.error("Failed to store profile picture for user {}: {}", userId, e.getMessage());
             throw new RuntimeException("Failed to store file", e);
         }
         user.setProfilePictureUrl("/uploads/" + fileName);
         userRepository.save(user);
+        logger.info("Profile picture updated for user {}", userId);
     }
 
     /**
@@ -235,7 +285,11 @@ public class UserService {
      * @return The Instant representing the creation date.
      */
     public Instant getUserCreationDate(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    logger.warn("Get creation date failed: User not found with ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
         return user.getCreatedAt();
     }
 
@@ -245,8 +299,11 @@ public class UserService {
      * @return The Instant representing the last update date.
      */
     public Instant getUserLastUpdateDate(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    logger.warn("Get last update date failed: User not found with ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
         return user.getUpdatedAt();
     }
-
 }

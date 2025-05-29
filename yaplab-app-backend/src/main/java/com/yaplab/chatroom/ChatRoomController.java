@@ -1,27 +1,33 @@
 package com.yaplab.chatroom;
 
 import com.yaplab.message.MessageResponseDTO;
+import com.yaplab.user.User;
 import com.yaplab.user.UserDTO;
+import com.yaplab.user.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 /**
  * REST Controller for handling user operations.
  * Provides endpoints for creating chatrooms, retrieving messages, adding and removing participants from groups.
  */
-@RestController
+@Controller
 @RequestMapping("/chatrooms")
 public class ChatRoomController {
     public final ChatRoomService chatRoomService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserService userService;
 
-    public ChatRoomController(ChatRoomService chatRoomService, SimpMessagingTemplate messagingTemplate) {
+    public ChatRoomController(ChatRoomService chatRoomService, SimpMessagingTemplate messagingTemplate, UserService userService) {
         this.chatRoomService = chatRoomService;
         this.messagingTemplate = messagingTemplate;
+        this.userService = userService;
     }
 
     /**
@@ -95,5 +101,37 @@ public class ChatRoomController {
     ){
         chatRoomService.updateLastActivity(chatroomId);
         return user;
+    }
+
+    /**
+     * Handles incoming "typing" events from users.
+     * Broadcasts a typing indicator to other users in the chat room.
+     * @param chatroomId The ID of the chat room.
+     * @param principal The authenticated user principal.
+     */
+    @MessageMapping("/chat.typing/{chatroomId}")
+    public void handleTypingEvent(
+            @DestinationVariable String chatroomId,
+            Principal principal
+    ) {
+        User user = userService.getUserEntityByEmail(principal.getName());
+        TypingIndicatorMessage typingIndicator = new TypingIndicatorMessage(user.getId(), user.getUserName(), chatroomId, true);
+        messagingTemplate.convertAndSend("/topic/chat/" + chatroomId + "/typing", typingIndicator);
+    }
+
+    /**
+     * Handles incoming "stop typing" events from users.
+     * Broadcasts a stop typing indicator to other users in the chat room.
+     * @param chatroomId The ID of the chat room.
+     * @param principal The authenticated user principal.
+     */
+    @MessageMapping("/chat.stoptyping/{chatroomId}")
+    public void handleStopTypingEvent(
+            @DestinationVariable String chatroomId,
+            Principal principal
+    ) {
+        User user = userService.getUserEntityByEmail(principal.getName());
+        TypingIndicatorMessage typingIndicator = new TypingIndicatorMessage(user.getId(), user.getUserName(), chatroomId, false);
+        messagingTemplate.convertAndSend("/topic/chat/" + chatroomId + "/typing", typingIndicator);
     }
 }

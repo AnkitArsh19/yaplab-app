@@ -11,6 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
+/**
+ * Controller for handling user authentication operations.
+ * This includes user registration, login, logout, password change,
+ */
 @RestController
 @RequestMapping("/auth")
 public class AuthenticationController {
@@ -29,7 +33,6 @@ public class AuthenticationController {
     /**
      * Registers a new user.
      * @param newUserDetails Details of the user in a body.
-     * returns the user registered and saved in the database.
      */
     @PostMapping("/register")
     public RegisterResponseDTO postNewUser(
@@ -39,7 +42,7 @@ public class AuthenticationController {
 
     /**
      * Login an existing user.
-     * returns the user registered and saved in the database.
+     * returns the response DTO containing user details and tokens.
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> loginUser(@RequestBody LoginRequestDTO loginRequest) {
@@ -47,19 +50,32 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Login an existing user
+     * returns the user registered and saved in the database.
+     */
     @PostMapping("/logout")
     public ResponseEntity<Void> logoutUser(@RequestHeader("authorization") String authHeader) {
         authenticationService.logout(authHeader);
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Refreshes the access token using the refresh token.
+     * @param requestDTO contains the refresh token.
+     * @return a new access token.
+     */
     @PostMapping("/refresh")
-    public ResponseEntity<AccessTokenResponseDTO> refresh(
+    public ResponseEntity<AccessTokenResponseDTO> refreshAccessToken(
             @RequestBody RefreshTokenRequestDTO requestDTO){
         AccessTokenResponseDTO response = authenticationService.refreshAccessToken(requestDTO.refreshToken());
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Changes the password of the user.
+     * @param request contains the old and new password.
+     */
     @PostMapping("/change-password")
     public ResponseEntity<Void> changePassword(
             @RequestBody PasswordChangeRequestDTO request
@@ -68,6 +84,10 @@ public class AuthenticationController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Sends a password reset link to the user's email.
+     * @param requestDTO contains the email ID of the user.
+     */
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> forgotPassword(
             @RequestBody ForgotPasswordRequestDTO requestDTO
@@ -76,16 +96,25 @@ public class AuthenticationController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Verifies the user's email using the token sent to their email.
+     * @param token the verification token.
+     * @return a redirect view to the login page with a success or error message.
+     */
     @GetMapping("/verify-email")
     public RedirectView verifyEmail(@RequestParam("token") String token) {
         try {
             authenticationService.verifyEmail(token);
-            return new RedirectView("/login?verified=true");
+            return new RedirectView("http://localhost:5173/auth/login?verified=true");
         } catch (IllegalArgumentException e) {
-            return new RedirectView("/verify-error?error=" + e.getMessage());
+            return new RedirectView("http://localhost:5173/auth/login?error=" + e.getMessage());
         }
     }
 
+    /**
+     * Resets the user's password using the token sent to their email.
+     * @param requestDTO contains the token and the new password.
+     */
     @PostMapping("/reset-password")
     public ResponseEntity<Void> resetPassword(
             @RequestBody ResetPasswordRequestDTO requestDTO

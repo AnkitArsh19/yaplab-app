@@ -1,12 +1,10 @@
 package com.yaplab.chatroom;
 
-import com.yaplab.group.Group;
 import com.yaplab.group.GroupResponseDTO;
 import com.yaplab.user.User;
 import com.yaplab.user.UserResponseDTO;
 import org.springframework.stereotype.Service;
 
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**

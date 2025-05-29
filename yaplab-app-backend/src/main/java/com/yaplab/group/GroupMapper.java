@@ -11,6 +11,9 @@ import java.util.stream.Collectors;
 @Service
 public class GroupMapper {
 
+    /**
+     * Returns a groupResponseDTO from a group
+     */
     public GroupResponseDTO toGroupResponseDTO(Group group) {
         if (group == null) {
             return null;

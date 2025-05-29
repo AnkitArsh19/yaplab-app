@@ -3,37 +3,70 @@ package com.yaplab.files;
 import com.yaplab.user.User;
 import jakarta.persistence.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
+/**
+ * File entity to store filenames, size, type url and user details.
+ */
 @Entity
 @Table(name = "files")
 public class File {
 
+    /**
+     * Unique identifier for each file which is assigned automatically.
+     * Long is preferred for large datasets.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Filename as a string
+     */
     @Column(nullable = false)
     private String fileName;
 
+    /**
+     * Type of the file audio, video, etc
+     */
     @Column(nullable = false)
     private String fileType;
 
+    /**
+     * Size of the file(in Bytes)
+     */
     @Column(nullable = false)
     private Long fileSize;
 
+    /**
+     * Url of the file which stores the location of a physical path
+     */
     @Column(nullable = false)
     private String fileUrl;
 
+    /**
+     * User details of the uploader
+     * Many files can be uploaded by one user
+     */
     @ManyToOne
     @JoinColumn(name = "uploaded_by")
     private User uploadedBy;
 
+    /**
+     * Time of upload(permanent)
+     */
     @Column(nullable = false, updatable = false)
-    private final LocalDateTime uploadedAt = LocalDateTime.now();
+    private final Instant uploadedAt = Instant.now();
 
+    /**
+     * Default constructor
+     */
     public File() {}
 
+    /**
+     * Parameterized constructor
+     */
     public File(String fileName, String fileType, Long fileSize, String fileUrl, User uploadedBy) {
         this.fileName = fileName;
         this.fileType = fileType;
@@ -42,6 +75,9 @@ public class File {
         this.uploadedBy = uploadedBy;
     }
 
+    /**
+     * Getters and setters
+     */
     public Long getId() {
         return id;
     }
@@ -90,7 +126,7 @@ public class File {
         this.uploadedBy = uploadedBy;
     }
 
-    public LocalDateTime getUploadedAt() {
+    public Instant getUploadedAt() {
         return uploadedAt;
     }
 }

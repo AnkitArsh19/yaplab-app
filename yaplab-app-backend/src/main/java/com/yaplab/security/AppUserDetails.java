@@ -7,14 +7,28 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 
+/**
+ * Custom UserDetails implementation for Spring Security
+ * This class implements UserDetails to provide user-specific information to the Spring Security framework.
+ * It is used to represent the authenticated user in the security context.
+ * It is an interface so we define all methods to create object
+ */
 public class AppUserDetails implements UserDetails {
 
+    /**
+     * The user entity associated with this UserDetails object.
+     */
     private final User user;
 
     public AppUserDetails(User user) {
         this.user = user;
     }
 
+    /**
+     * Returns the authorities granted to the user.
+     * In this implementation, no specific authorities are assigned.
+     * @return A collection of GrantedAuthority objects representing the user's authorities.
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.emptyList();

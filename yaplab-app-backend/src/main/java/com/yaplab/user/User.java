@@ -104,7 +104,6 @@ public class User {
         this.password = password;
     }
 
-
      /**
      *  Getters and Setters for returning the details and setting the details for the private fields
      */

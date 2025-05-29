@@ -13,10 +13,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
     /**
      * Configures the message broker for WebSocket communication.
      * Enables a simple in-memory broker and sets application destination prefixes.
-     *
      * @param registry the MessageBrokerRegistry to configure
      */
     @Override
@@ -28,7 +28,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     /**
      * Registers STOMP endpoints for WebSocket communication.
      * Sets the endpoint for WebSocket connections and allows SockJS fallback.
-     *
      * @param registry the StompEndpointRegistry to register endpoints
      */
     @Override

@@ -26,7 +26,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig{
 
-
+    /**
+     * Constructor based dependency injection
+     */
     private final UserDetailsService userDetailsService;
     private final JWTFilter jwtFilter;
 
@@ -35,23 +37,28 @@ public class SecurityConfig{
         this.jwtFilter = jwtFilter;
     }
 
-    /*
+    /**
      * Configures the security filter chain for the application.
-     * This method sets up CSRF protection, authorization rules, session management,
+     * Spring security's default CSRF function is disabled.
+     * Any request with login, register or password reset paths are authorized by default and permitted.
+     * The session is stateless and a filter is added before this default security filter to manage JWT tokens.
      * and adds the JWT filter to the security chain.
      */
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/auth/register","/auth/login")
+                        .requestMatchers(
+                                "/auth/register",
+                                "/auth/login",
+                                "/auth/verify-email",
+                                "/auth/forgot-password",
+                                "/auth/reset-password")
                         .permitAll()
                         .anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults())
-                .sessionManagement(session -> session.
+                        .sessionManagement(session -> session.
                         sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -61,7 +68,6 @@ public class SecurityConfig{
     /**
      * Bean for password encoding using BCrypt.
      * This encoder is used to hash passwords securely.
-     *
      * @return a BCryptPasswordEncoder instance
      */
     @Bean
@@ -72,7 +78,6 @@ public class SecurityConfig{
     /**
      * Bean for authentication manager.
      * This manager is used to handle authentication requests.
-     *
      * @param configuration the authentication configuration
      * @return an AuthenticationManager instance
      * @throws Exception if an error occurs during authentication manager creation
@@ -83,9 +88,8 @@ public class SecurityConfig{
     }
 
     /**
-     * Bean for authentication provider.
+     * Bean for DAO(Data Access Object) authentication provider.
      * This provider uses the user details service and password encoder for authentication.
-     *
      * @return an AuthenticationProvider instance
      */
     @Bean

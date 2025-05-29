@@ -22,11 +22,15 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     Optional<RefreshToken> findByToken(String token);
 
     /**
-     *
-     * @param token
-     * @return
+     * Finds the refresh token if it is not revoked
+     * @param token the refresh token
      */
     Optional<RefreshToken> findByTokenAndRevokedFalse(String token);
 
+    /**
+     * Finds the list of refresh token for a particular user which are not revoked
+     * @param user The user object.
+     * @return the list of tokens
+     */
     List<RefreshToken> findByUserAndRevokedFalse(User user);
 }

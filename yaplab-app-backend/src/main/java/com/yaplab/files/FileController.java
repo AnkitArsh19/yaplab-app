@@ -14,15 +14,32 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * REST Controller for handling file operations.
+ * Provides endpoints for uploading, downloading and deleting file.
+ */
 @RestController
 @RequestMapping("/files")
 public class FileController {
+
+    /**
+     * Constructor based dependency injection
+     */
     private final FileService fileService;
 
     public FileController(FileService fileService) {
         this.fileService = fileService;
     }
 
+    /**
+     * Returns a file as a resource for the client to download.
+     * File is wrapped as a resource using file service.
+     * The content type is determined using the extension of the file.
+     * A new header is created and tells browser to show the file in the window.
+     * Response entity is created using custom headers.
+     * File added in HTTP header and streamed on the client side
+     * @param fileId ID of the file
+     */
    @GetMapping("/download/{fileId}")
     public ResponseEntity<Resource> downloadFile(
             @PathVariable Long fileId
@@ -51,6 +68,11 @@ public class FileController {
         }
     }
 
+    /**
+     * Uploads a file to the server
+     * @param file File uploaded by the user
+     * @param userId User ID of the user
+     */
     @PostMapping("/upload")
     public ResponseEntity<FileUploadResponseDTO> uploadFile(
             @RequestParam("file") MultipartFile file,
@@ -66,6 +88,10 @@ public class FileController {
         }
     }
 
+    /**
+     * Deletes a file from the server
+     * @param fileId File ID of the file to be deleted
+     */
     @DeleteMapping("/{fileId}")
     public ResponseEntity<Void> deleteFile(
             @PathVariable Long fileId
@@ -80,6 +106,10 @@ public class FileController {
         }
     }
 
+    /**
+     * Returns the information about the uploaded file
+     * @param fileId File ID of the file
+     */
     @GetMapping("/{fileId}")
     public ResponseEntity<FileUploadResponseDTO> getFileInfo(
             @PathVariable Long fileId

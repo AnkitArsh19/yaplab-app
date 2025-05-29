@@ -9,16 +9,31 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service layer for handling sending emails to users for welcome, registration and password reset
+ */
 @Service
 public class EmailService {
 
+    /**
+     * Logger for EmailService
+     * This logger is used to log various events and errors in the EmailService class.
+     * It helps in debugging and tracking the flow of operations related to email management.
+     */
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+
     private final Resend resend;
 
     public EmailService(@Value("${resend.api.key}") String apiKey) {
         this.resend = new Resend(apiKey);
     }
 
+    /**
+     * This method constructs an HTML email with a reset link and sends it to the user
+     * @param to The recipient's email address.
+     * @param resetLink  The link to reset the user's password.
+     * @throws ResendException if there is an error sending the email.
+     */
     public void sendPasswordResetEmail(String to, String resetLink) throws ResendException {
         String html = """
                 <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;background:#f9f9f9;border-radius:12px;">
@@ -46,6 +61,11 @@ public class EmailService {
 
     }
 
+    /**
+     * This method constructs an HTML email with a welcome message after successful registration
+     * @param to The recipient's email address.
+     * @param userName The name of the user to personalize the email.
+     */
     public void sendWelcomeEmail(String to, String userName) {
         String html = """
             <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;background:#e6f7ff;border-radius:12px;">
@@ -61,9 +81,9 @@ public class EmailService {
             """.formatted(userName);
 
         CreateEmailOptions params = CreateEmailOptions.builder()
-                .from("Secure Messaging <onboarding@resend.dev>")
+                .from("YapLab <onboarding@resend.dev>")
                 .to(to)
-                .subject("Welcome to Secure Messaging!")
+                .subject("Welcome to YapLab!")
                 .html(html)
                 .build();
 
@@ -74,6 +94,11 @@ public class EmailService {
         }
     }
 
+    /**
+     * This method constructs an HTML email with a verification link.
+     * @param to The recipient's email address.
+     * @param verificationLink  The link to verify the user's email address.
+     */
     public void sendVerificationEmail(String to, String verificationLink) throws ResendException {
         String html = """
             <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;background:#f0fff4;border-radius:12px;">
@@ -84,12 +109,12 @@ public class EmailService {
                 </div>
                 <p style="color:#718096;font-size:14px;">If you did not sign up for this service, you can safely ignore this email.</p>
                 <hr style="border:none;border-top:1px solid #a7f3d0;margin:24px 0;">
-                <p style="color:#a0aec0;font-size:12px;text-align:center;">&copy; 2024 Secure Messaging App</p>
+                <p style="color:#a0aec0;font-size:12px;text-align:center;">&copy; 2025 YapLab App</p>
             </div>
             """.formatted(verificationLink);
 
         CreateEmailOptions params = CreateEmailOptions.builder()
-                .from("Secure Messaging <onboarding@resend.dev>") // Use your verified sender
+                .from("YapLab <onboarding@resend.dev>")
                 .to(to)
                 .subject("Verify Your Email Address")
                 .html(html)
