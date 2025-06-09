@@ -93,7 +93,7 @@ public class UserMapper {
      * @param user the entity object of the user
      * @return the registerResponseDTO
      */
-    public RegisterResponseDTO toRegisterResponseDTO(User user){
+    public RegisterResponseDTO toRegisterResponseDTO(User user) {
         if (user == null) {
             return null;
         }
@@ -102,7 +102,8 @@ public class UserMapper {
                 user.getUserName(),
                 user.getEmailId(),
                 user.getMobileNumber(),
-                user.getStatus()
+                user.getStatus(),
+                null
         );
     }
 }

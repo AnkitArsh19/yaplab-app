@@ -1,16 +1,16 @@
 package com.yaplab.security.authentication;
 
-import com.resend.Resend;
-import com.resend.core.exception.ResendException;
-import com.resend.services.emails.model.CreateEmailOptions;
-import com.resend.services.emails.model.CreateEmailResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Service layer for handling sending emails to users for welcome, registration and password reset
+ * Using log-only approach for testing purposes
  */
 @Service
 public class EmailService {
@@ -22,19 +22,23 @@ public class EmailService {
      */
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    private final Resend resend;
+    private final String apiKey;
+    private final String namespace;
 
-    public EmailService(@Value("${resend.api.key}") String apiKey) {
-        this.resend = new Resend(apiKey);
+    public EmailService(
+            @Value("${testmail.api.key:dummy-api-key}") String apiKey,
+            @Value("${testmail.namespace:dummy-namespace}") String namespace) {
+        this.apiKey = apiKey;
+        this.namespace = namespace;
+        logger.info("EmailService initialized in LOG-ONLY mode (no real emails will be sent)");
     }
 
     /**
      * This method constructs an HTML email with a reset link and sends it to the user
      * @param to The recipient's email address.
      * @param resetLink  The link to reset the user's password.
-     * @throws ResendException if there is an error sending the email.
      */
-    public void sendPasswordResetEmail(String to, String resetLink) throws ResendException {
+    public void sendPasswordResetEmail(String to, String resetLink) {
         String html = """
                 <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;background:#f9f9f9;border-radius:12px;">
                     <h2 style="color:#2d3748;">Reset Your Password</h2>
@@ -46,19 +50,11 @@ public class EmailService {
                 </div>
                 """.formatted(resetLink);
 
-        CreateEmailOptions params = CreateEmailOptions.builder()
-                .from("YapLab <onboarding@resend.dev>") // Use your verified sender
-                .to(to)
-                .subject("Reset Your Password")
-                .html(html)
-                .build();
-
         try {
-            CreateEmailResponse data = resend.emails().send(params);
-        } catch (ResendException e) {
+            sendEmail(to, "Reset Your Password", html);
+        } catch (Exception e) {
             logger.error("Failed to send password reset email to {}", to, e);
         }
-
     }
 
     /**
@@ -80,16 +76,9 @@ public class EmailService {
             </div>
             """.formatted(userName);
 
-        CreateEmailOptions params = CreateEmailOptions.builder()
-                .from("YapLab <onboarding@resend.dev>")
-                .to(to)
-                .subject("Welcome to YapLab!")
-                .html(html)
-                .build();
-
         try {
-            CreateEmailResponse data = resend.emails().send(params);
-        } catch (ResendException e) {
+            sendEmail(to, "Welcome to YapLab!", html);
+        } catch (Exception e) {
             logger.error("Failed to send welcome email to {}", to, e);
         }
     }
@@ -99,7 +88,7 @@ public class EmailService {
      * @param to The recipient's email address.
      * @param verificationLink  The link to verify the user's email address.
      */
-    public void sendVerificationEmail(String to, String verificationLink) throws ResendException {
+    public void sendVerificationEmail(String to, String verificationLink) {
         String html = """
             <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:32px;background:#f0fff4;border-radius:12px;">
                 <h2 style="color:#22c55e;">Verify Your Email Address</h2>
@@ -113,17 +102,57 @@ public class EmailService {
             </div>
             """.formatted(verificationLink);
 
-        CreateEmailOptions params = CreateEmailOptions.builder()
-                .from("YapLab <onboarding@resend.dev>")
-                .to(to)
-                .subject("Verify Your Email Address")
-                .html(html)
-                .build();
-
         try {
-            CreateEmailResponse data = resend.emails().send(params);
-        } catch (ResendException e) {
-            logger.error("Failed to send password reset email to {}", to, e);
+            sendEmail(to, "Verify Your Email Address", html);
+        } catch (Exception e) {
+            logger.error("Failed to send verification email to {}", to, e);
         }
+    }
+
+    /**
+     * Private helper method that logs email details instead of actually sending emails
+     * This is used for testing purposes only
+     *
+     * @param to The recipient's email address
+     * @param subject The email subject
+     * @param htmlContent The HTML content of the email
+     * @throws Exception if there is an error in processing
+     */
+    private void sendEmail(String to, String subject, String htmlContent) throws Exception {
+        // Extract links from HTML content for easy testing
+        String extractedLink = extractLinkFromHtml(htmlContent);
+
+        // Format a nice log message with all the details
+        logger.info("\n" +
+                        "╔════════════════════════════════════════════════════════════════════╗\n" +
+                        "║                       SIMULATED EMAIL SENT                         ║\n" +
+                        "╠════════════════════════════════════════════════════════════════════╣\n" +
+                        "║ TO:      {}\n" +
+                        "║ SUBJECT: {}\n" +
+                        "╠════════════════════════════════════════════════════════════════════╣\n" +
+                        "║ LINK:    {}\n" +
+                        "╚════════════════════════════════════════════════════════════════════╝",
+                to, subject, extractedLink);
+
+        // For debugging purposes, also log the full HTML content at debug level
+        logger.debug("Email HTML content: {}", htmlContent);
+
+        // Simulate successful email sending
+        logger.info("Email successfully 'sent' to {} (simulated)", to);
+    }
+
+    /**
+     * Extracts the first link (href) from HTML content
+     *
+     * @param html The HTML content to extract links from
+     * @return The first link found in the HTML
+     */
+    private String extractLinkFromHtml(String html) {
+        Pattern pattern = Pattern.compile("href=[\"'](.*?)[\"']");
+        Matcher matcher = pattern.matcher(html);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "No link found in email content";
     }
 }

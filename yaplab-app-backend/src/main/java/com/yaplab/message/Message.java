@@ -103,6 +103,25 @@ public class Message {
     private Message replyTo;
 
     /**
+     * Indicates if the message has been edited.
+     */
+    @Column(nullable = false)
+    private boolean edited = false;
+
+    /**
+     * Indicates if the message has been forwarded.
+     */
+    @Column(nullable = false)
+    private boolean forwarded = false;
+
+    /**
+     * Timestamp of the last edit.
+     * Nullable because a message might not be edited.
+     */
+    @Column(nullable = true)
+    private Instant editTimestamp;
+
+    /**
      * Default Constructor.
      */
     public Message() {
@@ -236,4 +255,35 @@ public class Message {
     public void setFile(File file) {
         this.file = file;
     }
+
+
+    public boolean isEdited() {
+        return edited;
+    }
+
+    public void setEdited(boolean edited) {
+        this.edited = edited;
+    }
+
+    public boolean isForwarded() {
+        return forwarded;
+    }
+
+    public void setForwarded(boolean forwarded) {
+        this.forwarded = forwarded;
+    }
+
+    public Instant getEditTimestamp() {
+        return editTimestamp;
+    }
+
+    public void setEditTimestamp(Instant editTimestamp) {
+        this.editTimestamp = editTimestamp;
+    }
+
+    public void markAsEdited() {
+        this.edited = true;
+        this.editTimestamp = Instant.now();
+    }
+    public void markAsForwarded() { this.forwarded = true; }
 }

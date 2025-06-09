@@ -19,6 +19,9 @@ import java.time.Instant;
  * @param uploadedByUserName name of the user who uploaded the file if any
  * @param fileType type of the file if any
  * @param repliedToMessage repliedToMessage DTO being replied to
+ * @param edited boolean indicating if the message was edited
+ * @param forwarded boolean indicating if the message was forwarded
+ * @param editTimestamp timestamp of the last edit
  */
 public record MessageResponseDTO (
         Long id,
@@ -33,7 +36,10 @@ public record MessageResponseDTO (
         String uploadedByUserName,
         String fileType,
         RepliedToMessageDTO repliedToMessage,
-        String chatRoomId
+        String chatRoomId,
+        boolean edited,
+        boolean forwarded,
+        Instant editTimestamp
 ){
 
     /**

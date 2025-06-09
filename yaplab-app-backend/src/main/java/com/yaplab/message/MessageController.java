@@ -112,10 +112,11 @@ public class MessageController {
      * Soft deletes a message.
      */
     @DeleteMapping("/{messageId}")
-    public ResponseEntity<Void> deleteMessage(
-            @PathVariable Long messageId
+    public ResponseEntity<Void> softDeleteMessage(
+            @PathVariable Long messageId, // Message ID from path
+            @RequestParam Long userId // User ID from request parameter
     ){
-        messageService.softDeleteMessage(messageId);
+        messageService.softDeleteMessage(messageId, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -130,5 +131,29 @@ public class MessageController {
         payload.put("messageId", messageId);
         payload.put("status", status);
         return payload;
+    }
+
+    /**
+     * Edits an existing message.
+     */
+    @PutMapping("/{messageId}")
+    public ResponseEntity<Message> editMessage(
+            @PathVariable Long messageId,
+            @RequestBody String newContent) {
+        Message updatedMessage = messageService.editMessage(messageId, newContent);
+        return ResponseEntity.ok(updatedMessage);
+    }
+
+    /**
+     * Forwards an existing message.
+     */
+    @PostMapping("/{messageId}/forward")
+    public ResponseEntity<Message> forwardMessage(
+            @PathVariable Long messageId,
+            @RequestBody Map<String, Object> requestBody) {
+        String recipientChatRoomId = (String) requestBody.get("recipientChatRoomId");
+        Long senderId = (Long) requestBody.get("senderId");
+        Message forwardedMessage = messageService.forwardMessage(messageId, recipientChatRoomId, senderId); // Pass recipientChatRoomId as String
+        return ResponseEntity.ok(forwardedMessage);
     }
 }

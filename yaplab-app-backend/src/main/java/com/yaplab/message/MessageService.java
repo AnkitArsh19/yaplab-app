@@ -1,9 +1,6 @@
 package com.yaplab.message;
 
-import com.yaplab.chatroom.ChatRoom;
-import com.yaplab.chatroom.ChatRoomDTO;
-import com.yaplab.chatroom.ChatRoomResponseDTO;
-import com.yaplab.chatroom.ChatRoomService;
+import com.yaplab.chatroom.*;
 import com.yaplab.enums.ChatRoomType;
 import com.yaplab.enums.MessageStatus;
 import com.yaplab.files.File;
@@ -14,6 +11,7 @@ import com.yaplab.user.User;
 import com.yaplab.user.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,14 +39,16 @@ public class MessageService {
     private final ChatRoomService chatRoomService;
     private final UserService userService;
     private final GroupService groupService;
+    private final ChatRoomRepository chatRoomRepository;
     private final FilesRepository filesRepository;
 
-    public MessageService(MessageRepository messageRepository, MessageMapper messageMapper, ChatRoomService chatRoomService, UserService userService, GroupService groupService, FilesRepository filesRepository) {
+    public MessageService(MessageRepository messageRepository, MessageMapper messageMapper, ChatRoomService chatRoomService, UserService userService, GroupService groupService, ChatRoomRepository chatRoomRepository, FilesRepository filesRepository) {
         this.messageRepository = messageRepository;
         this.messageMapper = messageMapper;
         this.chatRoomService = chatRoomService;
         this.userService = userService;
         this.groupService = groupService;
+        this.chatRoomRepository = chatRoomRepository;
         this.filesRepository = filesRepository;
     }
 
@@ -228,17 +228,61 @@ public class MessageService {
 
     /**
      * Soft deletes a message.
-     * @param id   The ID of the message.
+     * @param id The ID of the message.
+     * @param userId The ID of the user requesting the soft deletion.
      */
     @Transactional
-    public void softDeleteMessage(Long id){
+    public void softDeleteMessage(Long id, Long userId){
         Message message = messageRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.warn("Soft delete failed: Message not found with ID: {}", id);
                     return new RuntimeException("Message not found");
                 });
+        if (!message.getSender().getId().equals(userId)) {
+            throw new AccessDeniedException("User is not authorized to delete this message.");
+        }
         message.setSoftDeleted(true);
         messageRepository.save(message);
         logger.info("Message soft-deleted with ID: {}", id);
+    }
+
+    /**
+     * Edits a message.
+     * @param messageId The ID of the message to edit.
+     * @param newContent The new content for the message.
+     * @return The updated Message entity.
+     */
+    @Transactional
+    public Message editMessage(Long messageId, String newContent) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));
+        message.setContent(newContent);
+        message.markAsEdited();
+        messageRepository.save(message);
+        return message;
+    }
+
+    /**
+     * Forwards a message to a different chat room.
+     * @param messageId The ID of the message to forward.
+     * @param recipientChatRoomId The ID of the chat room to forward the message to.
+     * @param senderId The ID of the user forwarding the message.
+     * @return The forwarded Message entity.
+     */
+    @Transactional
+    public Message forwardMessage(Long messageId, String recipientChatRoomId, Long senderId) {
+        Message originalMessage = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Original message not found with ID: " + messageId));
+
+        ChatRoom recipientChatRoom = chatRoomRepository.findById(recipientChatRoomId)
+                .orElseThrow(() -> new RuntimeException("Recipient chat room not found with ID: " + recipientChatRoomId));
+
+        User sender = userService.getUserEntityByID(senderId);
+
+        Message forwardedMessage = messageMapper.createForwardedMessage(
+                recipientChatRoom, sender, originalMessage.getContent(), originalMessage.getFile(), originalMessage
+        );
+        messageRepository.save(forwardedMessage);
+        return forwardedMessage;
     }
 }

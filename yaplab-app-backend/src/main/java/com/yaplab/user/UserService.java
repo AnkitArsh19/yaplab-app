@@ -1,6 +1,5 @@
 package com.yaplab.user;
 
-import com.resend.core.exception.ResendException;
 import com.yaplab.enums.UserStatus;
 import com.yaplab.security.authentication.*;
 import jakarta.transaction.Transactional;
@@ -15,9 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -52,36 +49,63 @@ public class UserService {
 
     /**
      * Registers a new user and saves to the database.
-     * Does not register an existing user in the database.
      * Password is encoded and saved in the database using password encoder.
      * A random token is generated which expires in 30 minutes and sent to the user's email ID for verification.
      * The user also receives a welcome email.
      * @param registerRequestDTO A DTO with fields given by user to register
-     * @throws ResendException when email could not be sent after registration
      * @return A responseDTO sent in response
      */
     @Transactional
-    public RegisterResponseDTO registerUser(RegisterRequestDTO registerRequestDTO) throws ResendException {
-        Optional<User> userExists = userRepository.findByEmailId(registerRequestDTO.emailId());
-        if (userExists.isPresent()) {
-            logger.warn("Registration failed: User already exists with email {}", registerRequestDTO.emailId());
-            throw new IllegalArgumentException("User already exists with the given email id");
+    public RegisterResponseDTO registerUser(RegisterRequestDTO registerRequestDTO) {
+        Optional<User> existingUser = userRepository.findByEmailId(registerRequestDTO.emailId());
+
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            if (user.isEmailVerified()) {
+                throw new IllegalArgumentException("User already exists and is verified. Please login instead.");
+            } else {
+                List<EmailVerificationToken> existingTokens = emailVerificationTokenRepository.findByUser(user);
+                boolean hasValidToken = existingTokens.stream()
+                        .anyMatch(token -> token.getExpiryDate().isAfter(Instant.now()));
+
+                if (hasValidToken) {
+                    return new RegisterResponseDTO(
+                            user.getId(),
+                            user.getUserName(),
+                            user.getEmailId(),
+                            user.getMobileNumber(),
+                            user.getStatus(),
+                            "Registration reminder: Please check your email for the verification link we sent earlier."
+                    );
+                } else {
+                    resendVerificationEmail(registerRequestDTO.emailId());
+                    return new RegisterResponseDTO(
+                            user.getId(),
+                            user.getUserName(),
+                            user.getEmailId(),
+                            user.getMobileNumber(),
+                            user.getStatus(),
+                            "Your previous verification link expired. A new verification email has been sent."
+                    );
+                }
+            }
         }
+
         User user = userMapper.toEntityFromRegisterRequest(registerRequestDTO);
         user.setStatus(UserStatus.OFFLINE);
         user.setPassword(passwordEncoder.encode(registerRequestDTO.password()));
         user.setCreatedAt(Instant.now());
         userRepository.save(user);
+
         String token = UUID.randomUUID().toString();
         Instant expiry = Instant.now().plusSeconds(1800);
-        EmailVerificationToken verificationToken = new EmailVerificationToken();
-        verificationToken.setToken(token);
-        verificationToken.setExpiryDate(expiry);
-        verificationToken.setUser(user);
+        EmailVerificationToken verificationToken = new EmailVerificationToken(token, expiry, user);
         emailVerificationTokenRepository.save(verificationToken);
+
         String verificationLink = "http://localhost:8080/auth/verify-email?token=" + token;
         emailService.sendVerificationEmail(user.getEmailId(), verificationLink);
         emailService.sendWelcomeEmail(user.getEmailId(), user.getUserName());
+
         logger.info("User registered: {}", user.getEmailId());
         return userMapper.toRegisterResponseDTO(user);
     }
@@ -305,5 +329,53 @@ public class UserService {
                     return new IllegalArgumentException("User not found");
                 });
         return user.getUpdatedAt();
+    }
+
+    /**
+     * Checks if a user with the given email exists and returns information about their verification status
+     * @param emailId The email to check
+     * @return Map containing exists (boolean) and verified (boolean if exists)
+     */
+    public Map<String, Object> checkEmailStatus(String emailId) {
+        Map<String, Object> result = new HashMap<>();
+        Optional<User> userOptional = userRepository.findByEmailId(emailId);
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            result.put("exists", true);
+            result.put("verified", user.isEmailVerified());
+        } else {
+            result.put("exists", false);
+        }
+
+        return result;
+    }
+
+    /**
+     * Resends the email verification link to the user.
+     * Deletes existing tokens and creates a new one.
+     * @param emailId The email address of the user
+     */
+    @Transactional
+    public void resendVerificationEmail(String emailId) {
+        User user = userRepository.findByEmailId(emailId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.isEmailVerified()) {
+            throw new IllegalArgumentException("Email is already verified");
+        }
+
+        emailVerificationTokenRepository.deleteByUserId(user.getId());
+
+        String token = UUID.randomUUID().toString();
+        Instant expiry = Instant.now().plusSeconds(1800); // 30 minutes
+
+        EmailVerificationToken verificationToken = new EmailVerificationToken(token, expiry, user);
+        emailVerificationTokenRepository.save(verificationToken);
+
+        String verificationLink = "http://localhost:8080/auth/verify-email?token=" + token;
+        emailService.sendVerificationEmail(user.getEmailId(), verificationLink);
+
+        logger.info("Verification email resent to {}", user.getEmailId());
     }
 }

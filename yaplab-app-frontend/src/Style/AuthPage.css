@@ -1,6 +1,6 @@
 @font-face {
     font-family: "Regular";
-    src: url("./assets/fonts/Regular.ttf") format("truetype");
+    src: url("/src/assets/fonts/Regular.ttf") format("truetype");
     font-weight: normal;
     font-style: normal;
   }
@@ -8,98 +8,155 @@
 .container{
     display: flex;
     flex-direction: row;
-    position: relative;
     align-items: center;
     justify-content: center;
-    height: 100vh;    
+    height: 100vh;
     font-family: 'Regular', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
-.Form{
-    width: 300px;
-    height: 450px;
-    text-align: left;
-    background-color: #aea29c;
-    padding: 40px;
-    align-items: center;
-    justify-content: center;
-    color: #1a3033;
-    box-shadow: 4px 20px 20px rgba(0, 0, 0, 0.2);    
-}
-
 .image-container{
-    background-color: #D3CED0;
-    height: 530px;
+    height: 450px;
     width: auto;
     display: flex;
     align-items: center;
     justify-content: center;  
-      
-}
-
-.frame{
     position: relative;
     overflow: visible;
-    box-shadow: 1px 20px 20px rgba(0, 0, 0, 0.2);
-
-}
-
-.shape{
-    width: auto;
-    height: 530px;
-    transform: scale(1.2);
-    animation: zoomInOut 3s ease-in-out infinite alternate;
-}
-
-.passwordfield{
-    position: relative;
-    width: 200px;
-    display: inline-block;
-}
-
-.eye{
-    position: absolute;
-    right: 0px;
-    top: 40%;
-    max-height: 20px;
-    cursor: pointer;
+      
 }
 
 @keyframes zoomInOut {
     0% {
-      transform: scale(1.10);
+      transform: scale(1.1);
     }
     100% {
-      transform: scale(1.05);
+      transform: scale(1);
     }
   }
 
+.shape{
+    width: auto;
+    height: 470px;
+    animation: zoomInOut 3s ease-in-out infinite alternate;
+}
+
+.Form{
+    width: 358px;
+    height: auto;
+    text-align: left;
+    background-color: #d7cbc3;
+    display: flex;
+    flex-direction: column;
+    color: #1a3033;
+    border-radius: 30px;
+    box-shadow: 4px 20px 20px rgba(0, 0, 0, 0.2);
+    padding: 20px 30px 10px 30px;
+}
+
+.Heading{    
+    color: #254448;
+    font-family: 'Regular', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 2em;
+    font-weight: 700;
+    margin: 15px 0 15px 0;
+}
+
+.logo{
+    justify-content: center;
+    align-self: center;
+}
+
+.logo-image{
+    width: 150px;
+    height: auto;
+}
+
+.form-content{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
 
 .input_username,
 .input_emailid,
-.input_mobilenumber,
-.input_password{
+.input_mobilenumber{
     border-radius: 20px;
     border: none;
     font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
-    padding: 10px;
-    margin-top: 10px;
-    width: 200px;
+    width: calc(100% - 20px);
     height: 20px;
-    background-color: #D3CED0;
-    
+    background-color: #e3dbd9;
+    padding: 10px 10px 10px 15px;
+    position: relative;
+}
+
+.passwordfield {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.input_password {
+    border-radius: 20px;
+    border: none;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    width: 100%;
+    height: 20px;
+    background-color: #e3dbd9;
+    padding: 10px 50px 10px 15px;
+    position: relative;
+}
+
+.eye-container {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 22px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.eye {
+    width: 22px;
+    height: auto;
+}
+
+.forgot-password-container {
+    text-align: right;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.forgot-password-link {
+    color: #DD7155;
+    font-size: 0.95em;
+    text-decoration: none;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.message {
+    text-align: center;
+    color: #DD7155;
+    font-size: 14px;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 .submitButton{
-    background-color: #D3CED0;
+    background-color: #174249;
+    color: #ffffff;
     border: none;
     border-radius: 30px;
     padding: 9px;
-    margin-top: 20px;
     cursor: pointer;
-    font-size: 0.9em;
     height: 40px;
-    width: 80px;    
+    width: 80px; 
+    font-family: 'Regular', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 .toggleLogIn{
@@ -109,13 +166,22 @@
     color: #DD7155;
     font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
     font-size: 1.1em;
-    margin-left: -6px;
+    font-weight: 600;
 }
 
 .submitButton:hover{
-    background-color: #fdf6f9;
+    background-color: #4f6b6d;   
 }
 
-.toggleLogIn:hover{
-    color: #943735;
+.toggleLogIn:hover,
+.forgot-password-link:hover {
+    color: #943735;    
+    text-decoration: underline; 
+}
+
+.input_password:focus,
+.input_username:focus,
+.input_emailid:focus,
+.input_mobilenumber:focus {
+    outline: none; 
 }

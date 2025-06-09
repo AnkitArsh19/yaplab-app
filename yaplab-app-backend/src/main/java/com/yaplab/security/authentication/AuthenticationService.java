@@ -1,6 +1,5 @@
 package com.yaplab.security.authentication;
 
-import com.resend.core.exception.ResendException;
 import com.yaplab.enums.UserStatus;
 import com.yaplab.security.JWTService;
 import com.yaplab.security.authentication.passwordreset.PasswordChangeRequestDTO;
@@ -74,7 +73,7 @@ public class AuthenticationService {
      * Authentication object is created by authManager by checking the password and username.
      * The status is updated to online and token is generated to send in the response.
      * Marked as transactional to keep the method atomic due to multiple database operations
-     * At every login, a new refresh token is generated and old ones are revoked
+     * At every login, a new refresh token is generated and old ones are revoked.
      * @param loginRequestDTO The object containing username and password
      * @return The login response DTO
      */
@@ -85,20 +84,23 @@ public class AuthenticationService {
                     logger.warn("Login failed: User not found for email {}", loginRequestDTO.emailId());
                     return new IllegalArgumentException("User not found");
                 });
+
         if (!user.isEmailVerified()) {
             logger.warn("Login failed: Email not verified for user {}", loginRequestDTO.emailId());
             throw new IllegalArgumentException("Email not verified");
         }
+
         Authentication authentication =
                 authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmailId(), loginRequestDTO.password()));
         if (!authentication.isAuthenticated()) {
             logger.warn("Login failed: Invalid credentials for user {}", loginRequestDTO.emailId());
             throw new IllegalArgumentException("Invalid Credentials");
         }
+
         user.setStatus(UserStatus.ONLINE);
         userRepository.save(user);
-        List<RefreshToken> existingTokens = refreshTokenRepository.findByUserAndRevokedFalse(user);
-        existingTokens.forEach(token -> { token.setRevoked(true); refreshTokenRepository.save(token); });
+        List<RefreshToken> existingRefreshTokens = refreshTokenRepository.findByUserAndRevokedFalse(user);
+        existingRefreshTokens.forEach(token -> { token.setRevoked(true); refreshTokenRepository.save(token); });
 
         String accessToken = jwtService.generateAccessToken(user.getEmailId());
         RefreshToken refreshToken = jwtService.generateRefreshToken(user.getId());
@@ -228,7 +230,7 @@ public class AuthenticationService {
      * An email is sent to the user with the reset link.
      * @param emailId The email address of the user
      */
-    public void sendPasswordResetLink(@NotEmpty String emailId) throws ResendException {
+    public void sendPasswordResetLink(@NotEmpty String emailId) {
         User user = userRepository.findByEmailId(emailId)
                 .orElseThrow(() -> {
                     logger.warn("Password reset link request failed: User not found for email {}", emailId);

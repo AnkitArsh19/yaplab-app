@@ -10,6 +10,7 @@ public record RegisterResponseDTO(
         String userName,
         String emailId,
         String mobileNumber,
-        UserStatus status
+        UserStatus status,
+        String message
 ) {
 }

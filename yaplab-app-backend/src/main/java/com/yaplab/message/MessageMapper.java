@@ -69,56 +69,77 @@ public class MessageMapper {
     }
 
     /**
+     * Maps parameters to a message entity for a forwarded message.
+     *
+     * @param chatroom        The chatroom the message is being forwarded to.
+     * @param sender          The sender of the forwarded message.
+     * @param content         The content of the forwarded message.
+     * @param file            Optional file attached to the original message.
+     * @param originalMessage The original message being forwarded.
+     * @return The message entity for the forwarded message.
+     */
+    public Message createForwardedMessage(ChatRoom chatroom, User sender, String content, File file, Message originalMessage) {
+        MessageType messageType = (file != null) ? determineMessageTypeFromFileType(file.getFileType()) : MessageType.TEXT;
+        Message forwardedMessage = new Message(chatroom, sender, (User) null, content, messageType, MessageStatus.SENT, originalMessage, file);
+        forwardedMessage.setForwarded(true);
+        return forwardedMessage;
+    }
+
+    /**
      * Converts a Message entity to a MessageResponseDTO.
      * Handles files and message replies
      * @param message The message entity to convert.
      * @return A MessageResponseDTO containing the message details.
      */
     public MessageResponseDTO toResponseDTO(Message message) {
-    String fileUrl = null;
-    String fileName = null;
-    Long fileSize = null;
-    Long uploadedByUserId = null;
-    String uploadedByUserName = null;
-    String fileType = null;
-    MessageResponseDTO.RepliedToMessageDTO repliedToMessageDTO = null;
+        String fileUrl = null;
+        String fileName = null;
+        Long fileSize = null;
+        Long uploadedByUserId = null;
+        String uploadedByUserName = null;
+        String fileType = null;
+        MessageResponseDTO.RepliedToMessageDTO repliedToMessageDTO = null;
 
-    if (message.getFile() != null) {
-        File file = message.getFile();
-        fileUrl = file.getFileUrl();
-        fileName = file.getFileName();
-        fileSize = file.getFileSize();
-        fileType = file.getFileType();
+        if (message.getFile() != null) {
+            File file = message.getFile();
+            fileUrl = file.getFileUrl();
+            fileName = file.getFileName();
+            fileSize = file.getFileSize();
+            fileType = file.getFileType();
 
-        if (file.getUploadedBy() != null) {
-            uploadedByUserId = file.getUploadedBy().getId();
-            uploadedByUserName = file.getUploadedBy().getUserName();
+            if (file.getUploadedBy() != null) {
+                uploadedByUserId = file.getUploadedBy().getId();
+                uploadedByUserName = file.getUploadedBy().getUserName();
+            }
+
         }
-    }
 
-    if (message.getReplyTo() != null) {
-        Message repliedToMessage = message.getReplyTo();
-        Long repliedToId = repliedToMessage.getId();
-        String repliedToSenderName = (repliedToMessage.getSender() != null) ? repliedToMessage.getSender().getUserName() : null;
-        String repliedToContent = repliedToMessage.getContent();
+        if (message.getReplyTo() != null) {
+            Message repliedToMessage = message.getReplyTo();
+            Long repliedToId = repliedToMessage.getId();
+            String repliedToSenderName = (repliedToMessage.getSender() != null) ? repliedToMessage.getSender().getUserName() : null;
+            String repliedToContent = repliedToMessage.getContent();
 
-        repliedToMessageDTO = new MessageResponseDTO.RepliedToMessageDTO(repliedToId, repliedToSenderName, repliedToContent);
-    }
+            repliedToMessageDTO = new MessageResponseDTO.RepliedToMessageDTO(repliedToId, repliedToSenderName, repliedToContent);
+        }
 
-    return new MessageResponseDTO(
-            message.getId(),
-            message.getSender().getUserName(),
-            message.getContent(),
-            message.getTimestamp(),
-            message.getMessageStatus(),
-            fileUrl,
-            fileName,
-            fileSize,
-            uploadedByUserId,
-            uploadedByUserName,
-            fileType,
-            repliedToMessageDTO,
-            message.getChatroom().getChatroomId()
+        return new MessageResponseDTO(
+                message.getId(),
+                message.getSender().getUserName(),
+                message.getContent(),
+                message.getTimestamp(),
+                message.getMessageStatus(),
+                fileUrl,
+                fileName,
+                fileSize,
+                uploadedByUserId,
+                uploadedByUserName,
+                fileType,
+                repliedToMessageDTO,
+                message.getChatroom().getChatroomId(),
+                false,
+                false,
+                message.getEditTimestamp()
         );
     }
 }

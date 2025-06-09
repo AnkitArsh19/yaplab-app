@@ -9,6 +9,7 @@ import java.time.Instant;
  * Entity used to store an email verification token
  */
 @Entity
+@Table(name = "email_verification_token")
 public class EmailVerificationToken {
 
     /**
@@ -35,7 +36,7 @@ public class EmailVerificationToken {
      * User info of the user who requested for token
      * Many tokens can be sent to same user
      */
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
