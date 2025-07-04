@@ -2,7 +2,6 @@ package com.yaplab.message;
 
 import com.yaplab.chatroom.*;
 import com.yaplab.enums.ChatRoomType;
-import com.yaplab.enums.MessageStatus;
 import com.yaplab.files.File;
 import com.yaplab.files.FilesRepository;
 import com.yaplab.group.Group;
@@ -15,7 +14,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Service layer for handling message-related operations such as sending personal/group message.
@@ -26,8 +29,6 @@ public class MessageService {
 
     /**
      * Logger for MessageService
-     * This logger is used to log various events and errors in the MessageService class.
-     * It helps in debugging and tracking the flow of operations related to message management.
      */
     private static final Logger logger = LoggerFactory.getLogger(MessageService.class);
 
@@ -41,8 +42,9 @@ public class MessageService {
     private final GroupService groupService;
     private final ChatRoomRepository chatRoomRepository;
     private final FilesRepository filesRepository;
+    private final MessageStatusService messageStatusService;
 
-    public MessageService(MessageRepository messageRepository, MessageMapper messageMapper, ChatRoomService chatRoomService, UserService userService, GroupService groupService, ChatRoomRepository chatRoomRepository, FilesRepository filesRepository) {
+    public MessageService(MessageRepository messageRepository, MessageMapper messageMapper, ChatRoomService chatRoomService, UserService userService, GroupService groupService, ChatRoomRepository chatRoomRepository, FilesRepository filesRepository, MessageStatusService messageStatusService) {
         this.messageRepository = messageRepository;
         this.messageMapper = messageMapper;
         this.chatRoomService = chatRoomService;
@@ -50,6 +52,7 @@ public class MessageService {
         this.groupService = groupService;
         this.chatRoomRepository = chatRoomRepository;
         this.filesRepository = filesRepository;
+        this.messageStatusService = messageStatusService;
     }
 
     /**
@@ -69,6 +72,7 @@ public class MessageService {
                 null,
                 ChatRoomType.PERSONAL,
                 null,
+                // Converts ArrayList to List<String> for chatroom participants
                 Arrays.asList(messageDTO.senderId(), messageDTO.receiverId())
         );
 
@@ -84,20 +88,27 @@ public class MessageService {
         User receiver = userService.getUserEntityByID(messageDTO.receiverId());
 
         File attachedFile = null;
-        if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
+        if (messageDTO.fileId() != null) {
+            attachedFile = filesRepository.findById(messageDTO.fileId())
+                    .orElseThrow(() -> {
+                        logger.error("File not found with ID: {} for personal message", messageDTO.fileId());
+                        return new RuntimeException("File not found with ID: " + messageDTO.fileId());
+                    });
+        }
+
+        // Handle new file upload
+        else if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
             attachedFile = new File();
             attachedFile.setFileUrl(messageDTO.fileUrl());
             attachedFile.setFileName(messageDTO.fileName());
             attachedFile.setFileSize(messageDTO.fileSize());
             attachedFile.setUploadedBy(sender);
             filesRepository.save(attachedFile);
-            logger.info("File attached to personal message from user {}: {} ({} bytes)", sender.getId(), messageDTO.fileName(), messageDTO.fileSize());
         }
 
         Message message = messageMapper.createPersonalMessage(chatRoom, sender, receiver, messageDTO.content(), attachedFile);
         messageRepository.save(message);
         chatRoomService.updateLastActivity(chatRoom.getChatroomId());
-        logger.info("Personal message sent from user {} to user {} in chatroom {}", messageDTO.senderId(), messageDTO.receiverId(), chatRoom.getChatroomId());
         return messageMapper.toResponseDTO(message);
     }
 
@@ -133,21 +144,161 @@ public class MessageService {
         Group group = groupService.getGroupEntity(messageDTO.groupId());
 
         File attachedFile = null;
-        if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
+        // Handle existing file reference (like downloaded GIFs)
+        if (messageDTO.fileId() != null) {
+            attachedFile = filesRepository.findById(messageDTO.fileId())
+                    .orElseThrow(() -> {
+                        logger.error("File not found with ID: {} for group message", messageDTO.fileId());
+                        return new RuntimeException("File not found with ID: " + messageDTO.fileId());
+                    });
+        }
+        else if (messageDTO.fileUrl() != null && messageDTO.fileName() != null && messageDTO.fileSize() != null) {
             attachedFile = new File();
             attachedFile.setFileUrl(messageDTO.fileUrl());
             attachedFile.setFileName(messageDTO.fileName());
             attachedFile.setFileSize(messageDTO.fileSize());
             attachedFile.setUploadedBy(sender);
             filesRepository.save(attachedFile);
-            logger.info("File attached to group message from user {} in group {}: {} ({} bytes)", sender.getId(), group.getId(), messageDTO.fileName(), messageDTO.fileSize());
         }
 
         Message message = messageMapper.createGroupMessage(chatRoom, sender, group, messageDTO.content(), attachedFile);
         messageRepository.save(message);
+        
+        // Initialize per-user status tracking for group messages
+        messageStatusService.initializeGroupMessageStatuses(message);
+        
         chatRoomService.updateLastActivity(chatRoom.getChatroomId());
-        logger.info("Group message sent from user {} to group {} in chatroom {}", messageDTO.senderId(), messageDTO.groupId(), chatRoom.getChatroomId());
         return messageMapper.toResponseDTO(message);
+    }
+
+    /**
+     * Get all messages for a room
+     * @param roomId The room ID
+     * @return List of MessageResponseDTO
+     */
+    public List<MessageResponseDTO> getRoomMessages(String roomId) {
+        List<Message> messages = messageRepository.findByChatroomChatroomIdAndSoftDeletedFalseOrderByTimestampAsc(roomId);
+        return messages.stream()
+                .map(messageMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all messages for a room excluding messages hidden by a specific user
+     * @param roomId The room ID
+     * @param userId The user ID to filter hidden messages
+     * @return List of MessageResponseDTO
+     */
+    public List<MessageResponseDTO> getRoomMessages(String roomId, Long userId) {
+        List<Message> messages = messageRepository.findByChatroomChatroomIdAndSoftDeletedFalseAndHiddenForUsersNotContainingOrderByTimestampAsc(roomId, userId);
+        return messages.stream()
+                .map(messageMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Soft delete multiple messages
+     * @param messageIds List of message IDs to delete
+     * @param userId ID of the user requesting deletion
+     * @return List of successfully deleted message IDs
+     */
+    @Transactional
+    public List<Long> softDeleteMultipleMessages(List<Long> messageIds, Long userId) {
+        List<Long> deletedIds = new ArrayList<>();
+
+        for (Long messageId : messageIds) {
+            try {
+                Message message = messageRepository.findById(messageId)
+                        .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));
+
+                if (!message.getSender().getId().equals(userId)) {
+                    logger.warn("User {} not authorized to delete message {}", userId, messageId);
+                    continue;
+                }
+                message.setSoftDeleted(true);
+                messageRepository.save(message);
+                deletedIds.add(messageId);
+
+            } catch (Exception e) {
+                logger.error("Failed to delete message {}: {}", messageId, e.getMessage());
+            }
+        }
+        return deletedIds;
+    }
+
+    /**
+     * Forward multiple messages to a target room
+     * @param messageIds List of message IDs to forward
+     * @param targetRoomId Target room ID
+     * @param senderId ID of the user forwarding
+     * @return List of newly created forwarded messages
+     */
+    @Transactional
+    public List<MessageResponseDTO> forwardMultipleMessages(List<Long> messageIds, String targetRoomId, Long senderId) {
+        List<MessageResponseDTO> forwardedMessages = new ArrayList<>();
+
+        ChatRoom targetRoom = chatRoomRepository.findById(targetRoomId)
+                .orElseThrow(() -> new RuntimeException("Target room not found: " + targetRoomId));
+
+        User sender = userService.getUserEntityByID(senderId);
+
+        for (Long messageId : messageIds) {
+            try {
+                Message originalMessage = messageRepository.findById(messageId)
+                        .orElseThrow(() -> new RuntimeException("Original message not found: " + messageId));
+
+                Message forwardedMessage = messageMapper.createForwardedMessage(
+                        targetRoom, sender, originalMessage.getContent(),
+                        originalMessage.getFile(), originalMessage
+                );
+
+                // For personal chats, set the receiver
+                if (targetRoom.getChatroomType() == com.yaplab.enums.ChatRoomType.PERSONAL) {
+                    User receiver = targetRoom.getParticipants().stream()
+                            .filter(participant -> !participant.getId().equals(senderId))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Cannot find receiver in personal chat"));
+                    forwardedMessage.setReceiver(receiver);
+                }
+
+                messageRepository.save(forwardedMessage);
+                forwardedMessages.add(messageMapper.toResponseDTO(forwardedMessage));
+
+            } catch (Exception e) {
+                logger.error("Failed to forward message {}: {}", messageId, e.getMessage());
+            }
+        }
+
+        chatRoomService.updateLastActivity(targetRoomId);
+        
+        return forwardedMessages;
+    }
+
+    /**
+     * Edit a message with validation
+     * @param messageId The ID of the message to edit
+     * @param newContent The new content for the message
+     * @param userId The ID of the user requesting the edit
+     * @return The updated Message entity
+     */
+    @Transactional
+    public Message editMessage(Long messageId, String newContent, Long userId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));
+
+        if (!message.getSender().getId().equals(userId)) {
+            throw new AccessDeniedException("User is not authorized to edit this message.");
+        }
+
+        if (message.getSoftDeleted()) {
+            throw new IllegalArgumentException("Cannot edit a deleted message.");
+        }
+
+        message.setContent(newContent);
+        message.setEdited(true);
+        message.setEditTimestamp(Instant.now());
+        messageRepository.save(message);
+        return message;
     }
 
     /**
@@ -190,14 +341,20 @@ public class MessageService {
         User sender = userService.getUserEntityByID(replyMessageDTO.senderId());
 
         File attachedFile = null;
-        if (replyMessageDTO.fileUrl() != null && replyMessageDTO.fileName() != null && replyMessageDTO.fileSize() != null) {
+        if (replyMessageDTO.fileId() != null) {
+            attachedFile = filesRepository.findById(replyMessageDTO.fileId())
+                    .orElseThrow(() -> {
+                        logger.error("File not found with ID: {} for reply message", replyMessageDTO.fileId());
+                        return new RuntimeException("File not found with ID: " + replyMessageDTO.fileId());
+                    });
+        }
+        else if (replyMessageDTO.fileUrl() != null && replyMessageDTO.fileName() != null && replyMessageDTO.fileSize() != null) {
             attachedFile = new File();
             attachedFile.setFileUrl(replyMessageDTO.fileUrl());
             attachedFile.setFileName(replyMessageDTO.fileName());
             attachedFile.setFileSize(replyMessageDTO.fileSize());
             attachedFile.setUploadedBy(sender);
             filesRepository.save(attachedFile);
-            logger.info("File attached to reply message from user {} to message {}: {} ({} bytes)", sender.getId(), repliedToMessageId, replyMessageDTO.fileName(), replyMessageDTO.fileSize());
         }
 
         Message replyMessage = messageMapper.createReplyMessage(
@@ -205,61 +362,14 @@ public class MessageService {
                 attachedFile, repliedToMessage
         );
         messageRepository.save(replyMessage);
+        
+        // Initialize per-user status tracking if this is a group message reply
+        if (replyMessage.getGroup() != null) {
+            messageStatusService.initializeGroupMessageStatuses(replyMessage);
+        }
+        
         chatRoomService.updateLastActivity(chatRoom.getChatroomId());
         return messageMapper.toResponseDTO(replyMessage);
-    }
-
-    /**
-     * Updates the status of a message.
-     * @param id     The ID of the message.
-     * @param status The status the message.
-     */
-    @Transactional
-    public void updateMessageStatus(Long id, MessageStatus status){
-        Message message = messageRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.warn("Update message status failed: Message not found with ID: {}", id);
-                    return new RuntimeException("Message not found");
-                });
-        message.setMessageStatus(status);
-        messageRepository.save(message);
-        logger.info("Message status updated for message ID {}: to {}", id, status);
-    }
-
-    /**
-     * Soft deletes a message.
-     * @param id The ID of the message.
-     * @param userId The ID of the user requesting the soft deletion.
-     */
-    @Transactional
-    public void softDeleteMessage(Long id, Long userId){
-        Message message = messageRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.warn("Soft delete failed: Message not found with ID: {}", id);
-                    return new RuntimeException("Message not found");
-                });
-        if (!message.getSender().getId().equals(userId)) {
-            throw new AccessDeniedException("User is not authorized to delete this message.");
-        }
-        message.setSoftDeleted(true);
-        messageRepository.save(message);
-        logger.info("Message soft-deleted with ID: {}", id);
-    }
-
-    /**
-     * Edits a message.
-     * @param messageId The ID of the message to edit.
-     * @param newContent The new content for the message.
-     * @return The updated Message entity.
-     */
-    @Transactional
-    public Message editMessage(Long messageId, String newContent) {
-        Message message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));
-        message.setContent(newContent);
-        message.markAsEdited();
-        messageRepository.save(message);
-        return message;
     }
 
     /**
@@ -282,7 +392,80 @@ public class MessageService {
         Message forwardedMessage = messageMapper.createForwardedMessage(
                 recipientChatRoom, sender, originalMessage.getContent(), originalMessage.getFile(), originalMessage
         );
+
+        // For personal chats, set the receiver
+        if (recipientChatRoom.getChatroomType() == com.yaplab.enums.ChatRoomType.PERSONAL) {
+            User receiver = recipientChatRoom.getParticipants().stream()
+                    .filter(participant -> !participant.getId().equals(senderId))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Cannot find receiver in personal chat"));
+            forwardedMessage.setReceiver(receiver);
+        }
+
         messageRepository.save(forwardedMessage);
+        
+        // Initialize per-user status tracking if forwarding to a group
+        if (recipientChatRoom.getChatroomType() == com.yaplab.enums.ChatRoomType.GROUP) {
+            messageStatusService.initializeGroupMessageStatuses(forwardedMessage);
+        }
+        
+        chatRoomService.updateLastActivity(recipientChatRoom.getChatroomId());
         return forwardedMessage;
+    }
+
+    /**
+     * Soft delete a single message
+     *
+     * @param messageId ID of the message to delete
+     * @param userId    ID of the user requesting deletion
+     */
+    @Transactional
+    public void softDeleteSingleMessage(Long messageId, Long userId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));
+
+        if (!message.getSender().getId().equals(userId)) {
+            throw new AccessDeniedException("User is not authorized to delete this message.");
+        }
+
+        message.setSoftDeleted(true);
+        messageRepository.save(message);
+    }
+
+    /**
+     * Get a message by ID
+     * @param messageId The ID of the message
+     * @return The message entity
+     */
+    public Message getMessageById(Long messageId) {
+        return messageRepository.findById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));
+    }
+
+    /**
+     * Convert Message entity to MessageResponseDTO
+     * @param message The message entity
+     * @return MessageResponseDTO
+     */
+    public MessageResponseDTO convertToResponseDTO(Message message) {
+        return messageMapper.toResponseDTO(message);
+    }
+
+    /**
+     * Clear chat for a specific user by hiding all existing messages in the chatroom
+     * @param chatroomId The ID of the chatroom
+     * @param userId The ID of the user who wants to clear the chat
+     */
+    @Transactional
+    public void clearChatForUser(String chatroomId, Long userId) {
+
+        List<Message> messages = messageRepository.findByChatroomChatroomIdAndSoftDeletedFalseOrderByTimestampAsc(chatroomId);
+
+        // Loop through messages and add userId to hiddenForUsers
+        for (Message message : messages) {
+            message.getHiddenForUsers().add(userId);
+        }
+
+        messageRepository.saveAll(messages);
     }
 }

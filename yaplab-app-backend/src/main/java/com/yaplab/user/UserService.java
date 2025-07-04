@@ -1,10 +1,19 @@
 package com.yaplab.user;
 
+import com.yaplab.chatroom.ChatRoom;
+import com.yaplab.chatroom.ChatRoomRepository;
 import com.yaplab.enums.UserStatus;
+import com.yaplab.files.FilesRepository;
+import com.yaplab.group.Group;
+import com.yaplab.group.GroupRepository;
+import com.yaplab.message.MessageRepository;
+import com.yaplab.message.UserMessageStatusRepository;
 import com.yaplab.security.authentication.*;
+import com.yaplab.security.token.RefreshTokenRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,13 +47,32 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatRoomRepository chatRoomRepository;
+    private final GroupRepository groupRepository;
+    private final MessageRepository messageRepository;
+    private final UserMessageStatusRepository userMessageStatusRepository;
+    private final FilesRepository filesRepository;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper, BCryptPasswordEncoder passwordEncoder, EmailService emailService, EmailVerificationTokenRepository emailVerificationTokenRepository) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, BCryptPasswordEncoder passwordEncoder,
+                       EmailService emailService, EmailVerificationTokenRepository emailVerificationTokenRepository, 
+                       RefreshTokenRepository refreshTokenRepository, SimpMessagingTemplate messagingTemplate, 
+                       ChatRoomRepository chatRoomRepository, GroupRepository groupRepository, 
+                       MessageRepository messageRepository, UserMessageStatusRepository userMessageStatusRepository,
+                       FilesRepository filesRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.messagingTemplate = messagingTemplate;
+        this.chatRoomRepository = chatRoomRepository;
+        this.groupRepository = groupRepository;
+        this.messageRepository = messageRepository;
+        this.userMessageStatusRepository = userMessageStatusRepository;
+        this.filesRepository = filesRepository;
     }
 
     /**
@@ -105,23 +133,95 @@ public class UserService {
         String verificationLink = "http://localhost:8080/auth/verify-email?token=" + token;
         emailService.sendVerificationEmail(user.getEmailId(), verificationLink);
         emailService.sendWelcomeEmail(user.getEmailId(), user.getUserName());
-
-        logger.info("User registered: {}", user.getEmailId());
         return userMapper.toRegisterResponseDTO(user);
     }
 
     /**
-     * Sets the status of the user to offline.
-     * This method is called when a user disconnects from the WebSocket.
-     * @param userId The userId of the user to disconnect.
-     * It updates the user's status to offline in the database.
+     * Broadcasts user status to other users
+     * @param userId ID of the user
+     * @param status online or offline status
+     * @param lastSeen last seen time
+     */
+    private void broadcastUserStatus(Long userId, String status, Instant lastSeen) {
+        try {
+            Map<String, Object> statusUpdate = new HashMap<>();
+            statusUpdate.put("id", userId);
+            statusUpdate.put("userStatus", status);
+            statusUpdate.put("lastSeen", lastSeen != null ? lastSeen.toString() : null);
+            messagingTemplate.convertAndSend("/topic/user-status", statusUpdate);
+        } catch (Exception e) {
+            logger.error("Failed to broadcast user status having ID{}", userId);
+        }
+    }
+
+
+    /**
+     * Sets user status to online when connecting and broadcasts the status to other users.
+     */
+    public void connect(Long userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setStatus(UserStatus.ONLINE);
+            user.setLastSeen(null);
+            userRepository.save(user);
+            broadcastUserStatus(userId, "ONLINE", user.getLastSeen());
+        });
+    }
+
+    /**
+     * Sets the status of the user to offline and broadcasts the status to other users.
      */
     public void disconnect(Long userId) {
         userRepository.findById(userId).ifPresent(user -> {
             user.setStatus(UserStatus.OFFLINE);
+            user.setLastSeen(Instant.now());
             userRepository.save(user);
-            logger.info("User disconnected: {}", user.getEmailId());
+            broadcastUserStatus(userId, "OFFLINE", user.getLastSeen());
         });
+    }
+
+    /**
+     * Get comprehensive status information using direct repository access to avoid circular dependency
+     * This method retrieves the status of all users in the chat rooms the current user is part of.
+     * Outer map key is user ID, inner map contains status, last seen, and username.
+     * Creates a map of user IDs to their status information.
+     * @return a map where the key is the user ID and the value is a map containing status, last seen, and username.
+     */
+    public Map<Long, Map<String, Object>> getComprehensiveUserStatuses(Long currentUserId) {
+        Map<Long, Map<String, Object>> statusMap = new HashMap<>();
+
+        try {
+            User currentUser = getUserEntityByID(currentUserId);
+            List<ChatRoom> userChatRooms = chatRoomRepository.findAllByParticipantsContaining(currentUser);
+
+            Set<Long> chatUserIds = new HashSet<>();
+            for (ChatRoom chatRoom : userChatRooms) {
+                if (chatRoom.getParticipants() != null) {
+                    for (User participant : chatRoom.getParticipants()) {
+                        if (!participant.getId().equals(currentUserId)) {
+                            chatUserIds.add(participant.getId());
+                        }
+                    }
+                }
+            }
+
+            for (Long userId : chatUserIds) {
+                Optional<User> userOptional = userRepository.findById(userId);
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
+                    Map<String, Object> statusInfo = new HashMap<>();
+                    statusInfo.put("userStatus", user.getStatus().toString());
+                    statusInfo.put("lastSeen", user.getLastSeen());
+                    statusInfo.put("userName", user.getUserName());
+
+                    statusMap.put(user.getId(), statusInfo);
+                }
+            }
+            return statusMap;
+
+        } catch (Exception e) {
+            logger.error("Error getting comprehensive user statuses for user {}", currentUserId, e);
+            return new HashMap<>();
+        }
     }
 
     /**
@@ -132,10 +232,7 @@ public class UserService {
      */
     public UserResponseDTO getUserByID(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.warn("User not found with ID: {}", id);
-                    return new IllegalArgumentException("User not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("User not found for the given ID"));
         return userMapper.toResponseDTO(user);
     }
 
@@ -146,26 +243,24 @@ public class UserService {
      */
     public User getUserEntityByID(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.warn("User not found with ID: {}", id);
-                    return new IllegalArgumentException("User not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("User not found for the given ID"));
     }
 
     /**
-     * Finds the list of users with the searched set of characters
+     * Finds the list of users with the searched set of characters with priority ordering
      * User can search by emailId or username or by mobile number.
-     * This method is used to fetch user details for search functionality.
+     * Results are ordered by relevance: name matches first, then email, then mobile.
      * @param input the inputted set of characters
-     * @return the list of User response DTO object
+     * @param currentUserId the ID of the user performing the search (to exclude from results)
+     * @return the list of User response DTO objects ordered by relevance
      */
-    public List<UserResponseDTO> findUser(String input) {
-        List<User> users = userRepository.findDistinctByUserNameIgnoreCaseOrEmailIdIgnoreCaseOrMobileNumber(
-                input, input, input
-        );
-        logger.info("User search performed for input: {}", input);
+    public List<UserResponseDTO> findUser(String input, Long currentUserId) {
+        List<User> users = userRepository.findUsersWithPriority(input);
+
         return users
                 .stream()
+                .filter(User::isEmailVerified)
+                .filter(user -> !user.getId().equals(currentUserId))
                 .map(userMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -177,10 +272,7 @@ public class UserService {
      */
     public UserResponseDTO getUserByEmail(String emailId) {
         User user = userRepository.findByEmailId(emailId)
-                .orElseThrow(() -> {
-                    logger.warn("User not found with email: {}", emailId);
-                    return new IllegalArgumentException("User not found with the emailId: " + emailId);
-                });
+                .orElseThrow(() -> new IllegalArgumentException("User not found for the given email ID"));
         return userMapper.toResponseDTO(user);
     }
 
@@ -205,30 +297,7 @@ public class UserService {
      * @throws IllegalArgumentException if user is not found or email already in use.
      */
     public UserResponseDTO updateUser(UserDTO userDTO) {
-        User oldUser = userRepository.findById(userDTO.id())
-                .orElseThrow(() -> {
-                    logger.warn("User not found with ID: {}", userDTO.id());
-                    return new IllegalArgumentException("User not found with the id" + userDTO.id());
-                });
-
-        if (userDTO.emailId() != null && !userDTO.emailId().equals(oldUser.getEmailId())) {
-            userRepository.findByEmailId(userDTO.emailId())
-                    .ifPresent(user -> {
-                        logger.warn("Email already in use: {}", userDTO.emailId());
-                        throw new IllegalArgumentException("Email - " + userDTO.emailId() + " already in use");
-                    });
-        }
-        if (userDTO.userName() != null)
-            oldUser.setUserName(userDTO.userName());
-        if (userDTO.emailId() != null)
-            oldUser.setEmailId(userDTO.emailId());
-        if (userDTO.mobileNumber() != null)
-            oldUser.setMobileNumber(userDTO.mobileNumber());
-        User updatedUser = userMapper.toEntityFromDTO(userDTO);
-        updatedUser.setId(oldUser.getId());
-        updatedUser.setUpdatedAt(Instant.now());
-        logger.info("User updated: {}", oldUser.getEmailId());
-        return userMapper.toResponseDTO(userRepository.save(oldUser));
+        return updateUserWithNotifications(userDTO);
     }
 
     /**
@@ -236,13 +305,71 @@ public class UserService {
      * This method is used to remove a user from the system.
      * @param id ID of the user to delete.
      */
+    @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            logger.warn("Delete failed: User not found with ID: {}", id);
-            throw new IllegalArgumentException("User not found with ID: " + id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    logger.warn("Delete failed: User not found with ID: {}", id);
+                    return new IllegalArgumentException("User not found with ID: " + id);
+                });
+        
+        String userEmail = user.getEmailId();
+        String userName = user.getUserName();
+        
+        // Handle groups created by this user - delete them as they cannot exist without a creator
+        List<Group> userCreatedGroups = groupRepository.findByCreatedBy(user);
+        
+        // First, delete chat rooms associated with the groups created by this user
+        for (Group group : userCreatedGroups) {
+            List<ChatRoom> groupChatRooms = chatRoomRepository.findByGroup(group);
+            for (ChatRoom chatRoom : groupChatRooms) {
+
+                // Delete user message statuses for this chatroom before deleting the chatroom
+                userMessageStatusRepository.deleteByMessageChatroomId(chatRoom.getChatroomId());
+                chatRoomRepository.delete(chatRoom);
+            }
         }
+
+        groupRepository.removeUserFromAllGroups(user.getId());
+        groupRepository.deleteGroupsByCreatedBy(user.getId());
+
+        List<ChatRoom> userChatRooms = chatRoomRepository.findAllByParticipantsContaining(user);
+        for (ChatRoom chatRoom : userChatRooms) {
+            userMessageStatusRepository.deleteByUserIdAndMessageChatroomId(user.getId(), chatRoom.getChatroomId());
+            
+            chatRoom.getParticipants().remove(user);
+            chatRoomRepository.save(chatRoom);
+        }
+        
+        // Delete all messages sent by the user and their associated statuses
+        // This is necessary to avoid foreign key constraint violations
+        // While this removes chat history, it's required for user deletion to work
+        userMessageStatusRepository.deleteByMessageSenderId(user.getId());
+        userMessageStatusRepository.deleteByMessageReceiverId(user.getId());
+        userMessageStatusRepository.deleteByUserId(user.getId());
+        messageRepository.deleteBySenderId(user.getId());
+        messageRepository.deleteByReceiverId(user.getId());
+        filesRepository.deleteByUploadedBy(user);
+        
+        // Delete user tokens (email verification, password reset, refresh tokens, etc.)
+        emailVerificationTokenRepository.deleteByUserId(user.getId());
+        refreshTokenRepository.deleteByUser(user);
+        user.setStatus(UserStatus.OFFLINE);
+        user.setLastSeen(Instant.now());
+        userRepository.save(user);
+        
+        // Broadcast user offline status
+        Map<String, Object> userStatusUpdate = new HashMap<>();
+        userStatusUpdate.put("userStatus", UserStatus.OFFLINE);
+        userStatusUpdate.put("lastSeen", user.getLastSeen());
+        userStatusUpdate.put("id", user.getId());
+        messagingTemplate.convertAndSend("/topic/user-status", userStatusUpdate);
         userRepository.deleteById(id);
-        logger.info("User deleted with ID: {}", id);
+        
+        // Send account deletion notification
+        emailService.sendAccountDeletionNotification(userEmail, userName);
+        
+        logger.info("User deleted successfully with ID: {} and deletion notification sent to: {}", id, userEmail);
     }
 
     /**
@@ -251,7 +378,6 @@ public class UserService {
      * @return the list of user response DTO object.
      */
     public List<UserResponseDTO> findConnectedOrDisconnectedUsers(UserStatus status) {
-        logger.info("Finding users with status: {}", status);
         return userRepository.findByStatus(status)
                 .stream()
                 .map(userMapper::toResponseDTO)
@@ -288,17 +414,22 @@ public class UserService {
             logger.warn("Profile picture update failed: File too large for user {}", userId);
             throw new IllegalArgumentException("File size must not exceed 5MB.");
         }
-        String uploadsDir = "/uploads";
-        String fileName = "profile_" + userId + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadsDir, fileName);
+        // Create absolute path for uploads/users directory
+        Path projectRoot = Paths.get("").toAbsolutePath();
+        Path uploadsDir = projectRoot.resolve("uploads").resolve("users");
+        String fileName = "profile_" + userId + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        Path filePath = uploadsDir.resolve(fileName);
+        
         try {
             Files.createDirectories(filePath.getParent());
             file.transferTo(filePath.toFile());
+            logger.info("Profile picture stored successfully at: {}", filePath);
         } catch (IOException e) {
             logger.error("Failed to store profile picture for user {}: {}", userId, e.getMessage());
             throw new RuntimeException("Failed to store file", e);
         }
-        user.setProfilePictureUrl("/uploads/" + fileName);
+        String profilePictureUrl = "/files/serve/users/" + fileName;
+        user.setProfilePictureUrl(profilePictureUrl);
         userRepository.save(user);
         logger.info("Profile picture updated for user {}", userId);
     }
@@ -375,7 +506,133 @@ public class UserService {
 
         String verificationLink = "http://localhost:8080/auth/verify-email?token=" + token;
         emailService.sendVerificationEmail(user.getEmailId(), verificationLink);
+    }
 
-        logger.info("Verification email resent to {}", user.getEmailId());
+    /**
+     * Initiates the email change process by verifying the user's password and sending a confirmation link to the new email.
+     * @param userId The ID of the user
+     * @param newEmail The new email address
+     * @param password The password of the user for verification
+     */
+    @Transactional
+    public void initiateEmailChange(Long userId, String newEmail, String password) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        emailVerificationTokenRepository.deleteByUserIdAndTokenType(userId, "EMAIL_CHANGE");
+
+        String token = UUID.randomUUID().toString();
+        Instant expiry = Instant.now().plusSeconds(1800);
+
+        EmailVerificationToken emailChangeToken = new EmailVerificationToken(token, expiry, user, newEmail);
+        emailVerificationTokenRepository.save(emailChangeToken);
+
+        String confirmationLink = "http://localhost:5173/auth/confirm-email-change?token=" + token;
+        emailService.sendEmailChangeVerification(newEmail, confirmationLink, user.getUserName());
+    }
+
+    /**
+     * Confirms the email change using the verification token
+     * @param token The email change verification token
+     */
+    @Transactional
+    public void confirmEmailChange(String token) {
+        EmailVerificationToken changeToken = emailVerificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired email change token"));
+
+        if (changeToken.isExpired()) {
+            emailVerificationTokenRepository.delete(changeToken);
+            throw new IllegalArgumentException("Email change token has expired");
+        }
+
+        if (changeToken.getTokenType() != EmailVerificationToken.TokenType.EMAIL_CHANGE) {
+            throw new IllegalArgumentException("Invalid token type for email change");
+        }
+
+        User user = changeToken.getUser();
+        String oldEmail = user.getEmailId();
+        String newEmail = changeToken.getNewEmail();
+        userRepository.findByEmailId(newEmail)
+                .ifPresent(existingUser -> {
+                    if (!existingUser.getId().equals(user.getId())) {
+                        throw new IllegalArgumentException("Email address is already in use");
+                    }
+                });
+
+        user.setEmailId(newEmail);
+        user.setUpdatedAt(Instant.now());
+        userRepository.save(user);
+
+        emailVerificationTokenRepository.delete(changeToken);
+    }
+
+    /**
+     * Updates the user details with notifications for email and mobile number changes.
+     * This method checks if the email or mobile number has changed,
+     */
+    public UserResponseDTO updateUserWithNotifications(UserDTO userDTO) {
+        User oldUser = userRepository.findById(userDTO.id())
+                .orElseThrow(() -> {
+                    logger.warn("User not found with ID: {}", userDTO.id());
+                    return new IllegalArgumentException("User not found with the id " + userDTO.id());
+                });
+
+        boolean mobileChanged = false;
+
+        if (userDTO.emailId() != null && !userDTO.emailId().equals(oldUser.getEmailId())) {
+            userRepository.findByEmailId(userDTO.emailId())
+                    .ifPresent(user -> {
+                        if (!user.getId().equals(oldUser.getId())) {
+                            throw new IllegalArgumentException("Email - " + userDTO.emailId() + " already in use");
+                        }
+                    });
+            oldUser.setEmailId(userDTO.emailId());
+        }
+        
+        // Check and update mobile number if changed
+        if (userDTO.mobileNumber() != null) {
+            String trimmedMobileNumber = userDTO.mobileNumber().trim();
+            
+            if (trimmedMobileNumber.isEmpty()) {
+                mobileChanged = oldUser.getMobileNumber() != null;
+                oldUser.setMobileNumber(null);
+            } else {
+                if (!trimmedMobileNumber.matches("^[0-9]{10}$")) {
+                    throw new IllegalArgumentException("Mobile number must be exactly 10 digits");
+                }
+                
+                // Check if this mobile number is already used by another user
+                if (!trimmedMobileNumber.equals(oldUser.getMobileNumber())) {
+                    userRepository.findByMobileNumber(trimmedMobileNumber)
+                            .ifPresent(user -> {
+                                if (!user.getId().equals(oldUser.getId())) {
+                                    throw new IllegalArgumentException("Mobile number - " + trimmedMobileNumber + " already in use");
+                                }
+                            });
+                    oldUser.setMobileNumber(trimmedMobileNumber);
+                    mobileChanged = true;
+                }
+            }
+        }
+
+        if (userDTO.userName() != null) {
+            oldUser.setUserName(userDTO.userName());
+        }
+        
+        oldUser.setUpdatedAt(Instant.now());
+        User savedUser = userRepository.save(oldUser);
+        if (mobileChanged) {
+            emailService.sendMobileNumberChangeNotification(
+                oldUser.getEmailId(), 
+                oldUser.getUserName(), 
+                savedUser.getMobileNumber()
+            );
+        }
+
+        return userMapper.toResponseDTO(savedUser);
     }
 }

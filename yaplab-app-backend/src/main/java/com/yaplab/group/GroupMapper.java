@@ -23,7 +23,12 @@ public class GroupMapper {
                     group.getName(),
                     group.getUsers().stream()
                             .map(User::getUserName)
-                            .collect(Collectors.toList())
+                            .collect(Collectors.toList()),
+                    group.getCreatedBy().getId(),
+                    group.getCreatedBy().getUserName(),
+                    group.getCreatedAt(),
+                    group.getProfilePictureUrl(),
+                    group.getUsers().size()
             );
         }
     }

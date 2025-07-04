@@ -1,0 +1,71 @@
+@font-face {
+    font-family: "Regular";
+    src: url("/src/assets/fonts/Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+.logo-image-chatarea{
+    width: 400px;
+    height: auto;
+    opacity: 0.7;
+}
+
+.chat-area {   
+    height: calc(100vh - 60px);
+    width: calc(100% - 30px); 
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;    
+    background-color: #fff0e6;
+    box-shadow: 2px 10px 10px rgba(0, 0, 0, 0.2);
+    margin: 0px 30px;
+}
+
+.chat-area.no-chat {
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    height: calc(100vh - 100px);
+    width: calc(100% - 30px); 
+}
+
+.no-chat-message {
+    text-align: center;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    color: #c1967a;
+}
+
+.no-chat-message h3 {
+    margin: 20px 0 10px 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.no-chat-message p {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.date-separator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 24px 0 12px 0;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 0.95rem;
+    color: #745b4a;
+    padding: 6px 18px;
+    /* Glassmorphism styles */
+    background: rgba(255, 240, 230, 0.44);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8.1px);
+    -webkit-backdrop-filter: blur(8.1px);
+    border: 1px solid rgba(255, 240, 230, 0.46);
+    z-index: 2;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}

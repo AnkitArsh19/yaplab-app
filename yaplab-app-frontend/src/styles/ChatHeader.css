@@ -1,0 +1,151 @@
+@font-face {
+    font-family: "Regular";
+    src: url("/src/assets/fonts/Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+.chat-header {
+    background-color: #1a3033;
+    padding: 20px 25px 15px 20px;
+    height: 60px;
+    top: 50%;
+    border-radius: 20px 20px 0 0;
+}
+
+.chat-header-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.chat-header-avatar {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.chat-header-details {
+    flex: 1;
+    margin-left: 10px;
+}
+
+.chat-header-name {
+    margin: 0;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff0e5;
+}
+
+.chat-header-status {
+    margin: 2px 0 0 0;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 0.7rem;
+    color: #fff0e6;
+}
+
+.chat-header-status.online {
+    color: #fff0e6;
+    position: static;
+}
+
+.chat-header-status.online::before {
+    content: none;
+}
+
+.chat-header-status.offline {
+    color: #8696a0;
+}
+
+.chat-menu-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-left: auto;
+}
+
+.chat-header-info {
+    justify-content: space-between;
+}
+
+/* Selection mode styles */
+.selection-back-btn {
+    background: none;
+    border: none;
+    color: #fff0e6;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.selection-back-btn:hover {
+    background-color: rgba(255, 240, 230, 0.1);
+}
+
+.selection-back-btn img {
+    width: auto;
+    height: 20px;
+    filter: brightness(0) saturate(100%) invert(98%) sepia(24%) saturate(456%) hue-rotate(315deg) brightness(106%) contrast(100%); /* True beige color */
+}
+
+.selection-info {
+    flex: 1;
+    text-align: center;
+}
+
+.selection-count {
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff0e6;
+}
+
+.selection-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.action-btn:hover {
+    background-color: rgba(255, 240, 230, 0.1);
+}
+
+.action-btn img {
+    width: auto;
+    height: 20px;
+    filter: brightness(0) saturate(100%) invert(98%) sepia(24%) saturate(456%) hue-rotate(315deg) brightness(106%) contrast(100%); /* True beige color */
+}
+
+.delete-btn:hover {
+    background-color: rgba(220, 38, 38, 0.2);
+}
+
+.forward-btn:hover {
+    background-color: rgba(34, 197, 94, 0.2);
+}

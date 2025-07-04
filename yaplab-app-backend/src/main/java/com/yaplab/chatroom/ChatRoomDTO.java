@@ -14,7 +14,7 @@ import java.util.List;
  * @param participantIds List of participants in the chatroom
  */
 public record ChatRoomDTO(
-        @NotEmpty String chatroomId,
+        String chatroomId,
         ChatRoomType chatRoomType,
         Long groupId,
         @NotEmpty List<Long> participantIds

@@ -3,7 +3,6 @@ package com.yaplab.chatroom;
 import com.yaplab.enums.ChatRoomType;
 import com.yaplab.group.Group;
 import com.yaplab.group.GroupRepository;
-import com.yaplab.message.Message;
 import com.yaplab.message.MessageMapper;
 import com.yaplab.message.MessageRepository;
 import com.yaplab.message.MessageResponseDTO;
@@ -50,7 +49,7 @@ public class ChatRoomService {
         this.chatRoomRepository = chatRoomRepository;
         this.chatRoomMapper = chatRoomMapper;
         this.messageMapper = messageMapper;
-        this.messageRepository = messageRepository; // Ensure this is initialized
+        this.messageRepository = messageRepository;
     }
 
     /**
@@ -86,7 +85,6 @@ public class ChatRoomService {
         chatRoom.setChatroomType(ChatRoomType.PERSONAL);
         chatRoom.setParticipants(participants);
         chatRoom.setLastActivity(Instant.now());
-        logger.info("Created new personal chatroom {} between users {} and {}", chatRoomId, userId1, userId2);
         return chatRoomMapper.chatRoomResponseDTO(chatRoomRepository.save(chatRoom));
     }
 
@@ -110,7 +108,6 @@ public class ChatRoomService {
                     return new RuntimeException("Group not found");
                 });
 
-        logger.debug("Attempting to find existing group chatroom for group {}", groupId);
         Optional<ChatRoom> existing = chatRoomRepository.findByGroupAndChatroomType(group, ChatRoomType.GROUP);
 
         if (existing.isPresent()) {
@@ -124,7 +121,6 @@ public class ChatRoomService {
         chatRoom.setGroup(group);
         chatRoom.setParticipants(participants);
         chatRoom.setLastActivity(Instant.now());
-        logger.info("Created new group chatroom {} for group {}", chatRoomId, groupId);
         return chatRoomMapper.chatRoomResponseDTO(chatRoomRepository.save(chatRoom));
     }
 
@@ -139,14 +135,13 @@ public class ChatRoomService {
     }
 
     /**
-     * Get the list of chatrooms for a particular user
+     * Get the list of chatrooms for a particular user ordered by last activity (most recent first)
      * @param userID user ID of the user
-     * @return list of chatroom response DTO
+     * @return list of chatroom response DTO ordered by last activity
      */
     public List<ChatRoomResponseDTO> getUserChatRooms(Long userID){
         User user = userService.getUserEntityByID(userID);
-        logger.info("Fetching chatrooms for user {}", userID);
-        return chatRoomRepository.findAllByParticipantsContaining(user)
+        return chatRoomRepository.findAllByParticipantsContainingOrderByLastActivityDesc(user)
                 .stream()
                 .map(chatRoomMapper::chatRoomResponseDTO)
                 .collect(Collectors.toList());
@@ -158,11 +153,8 @@ public class ChatRoomService {
      * @return list of messages in the chatroom
      */
     public List<MessageResponseDTO> getMessagesFromChatRoom(String chatroomId){
-        logger.info("Fetching non-soft-deleted messages for chatroom {}", chatroomId);
-        // Use the repository method to find messages where softDeleted is false
-        List<Message> messages = messageRepository.findByChatroom_ChatroomIdAndSoftDeletedFalse(chatroomId);
-
-        return messages.stream()
+        return messageRepository.findByChatroomChatroomIdAndSoftDeletedFalseOrderByTimestampAsc(chatroomId)
+                .stream()
                 .map(messageMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -217,4 +209,50 @@ public class ChatRoomService {
         chatRoom.setLastActivity(Instant.now());
         chatRoomRepository.save(chatRoom);
     }
+
+    /**
+     * Get chatroom IDs where user is a participant
+     * @param userId User ID
+     * @return List of chatroom IDs
+     */
+    public List<String> getUserChatroomIds(Long userId) {
+        User user = userService.getUserEntityByID(userId);
+        return chatRoomRepository.findAllByParticipantsContaining(user)
+                .stream()
+                .map(ChatRoom::getChatroomId)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Deletes a chatroom and all associated messages.
+     * @param chatroomId ID of the chatroom to delete
+     */
+    @Transactional
+    public void deleteChatRoom(String chatroomId) {
+        Optional<ChatRoom> chatRoomOpt = chatRoomRepository.findById(chatroomId);
+        if (chatRoomOpt.isPresent()) {
+            // Delete all messages in the chatroom first
+            messageRepository.deleteByChatroomChatroomId(chatroomId);
+            // Delete the chatroom
+            chatRoomRepository.delete(chatRoomOpt.get());
+        } else {
+            logger.warn("Chatroom {} not found for deletion", chatroomId);
+        }
+    }
+
+    /**
+     * Clear all messages for a user in a chatroom (used for personal chat "delete")
+     * @param chatroomId ID of the chatroom
+     * @param userId ID of the user to clear messages for
+     */
+    @Transactional
+    public void clearMessagesForUser(String chatroomId, Long userId) {
+        // Add user to hiddenForUsers for all messages in this chatroom
+        messageRepository.findByChatroomChatroomIdAndSoftDeletedFalseOrderByTimestampAsc(chatroomId)
+                .forEach(message -> {
+                    message.getHiddenForUsers().add(userId);
+                    messageRepository.save(message);
+                });
+    }
+
 }

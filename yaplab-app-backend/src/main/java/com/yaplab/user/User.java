@@ -76,6 +76,12 @@ public class User {
     private UserStatus status;
 
     /**
+     * Timestamp when user was last seen (when they went offline).
+     */
+    @Column(name = "last_seen")
+    private Instant lastSeen;
+
+    /**
      * Url of the profile picture stored.
      */
     @Column(name = "profile-picture-url")
@@ -177,6 +183,14 @@ public class User {
 
     public void setStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public Instant getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(Instant lastSeen) {
+        this.lastSeen = lastSeen;
     }
 
     public String getProfilePictureUrl() {

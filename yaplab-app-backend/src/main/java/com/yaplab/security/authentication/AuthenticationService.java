@@ -1,6 +1,5 @@
 package com.yaplab.security.authentication;
 
-import com.yaplab.enums.UserStatus;
 import com.yaplab.security.JWTService;
 import com.yaplab.security.authentication.passwordreset.PasswordChangeRequestDTO;
 import com.yaplab.security.authentication.passwordreset.PasswordResetToken;
@@ -80,31 +79,36 @@ public class AuthenticationService {
     @Transactional
     public LoginResponseDTO loginUser(LoginRequestDTO loginRequestDTO) {
         User user = userRepository.findByEmailId(loginRequestDTO.emailId())
-                .orElseThrow(() -> {
-                    logger.warn("Login failed: User not found for email {}", loginRequestDTO.emailId());
-                    return new IllegalArgumentException("User not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (!user.isEmailVerified()) {
-            logger.warn("Login failed: Email not verified for user {}", loginRequestDTO.emailId());
             throw new IllegalArgumentException("Email not verified");
         }
 
-        Authentication authentication =
-                authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmailId(), loginRequestDTO.password()));
-        if (!authentication.isAuthenticated()) {
-            logger.warn("Login failed: Invalid credentials for user {}", loginRequestDTO.emailId());
+        try {
+            Authentication authentication =
+                    authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmailId(), loginRequestDTO.password()));
+
+            if (!authentication.isAuthenticated()) {
+                throw new IllegalArgumentException("Invalid Credentials");
+            }
+        } catch (Exception e) {
+            logger.warn("Login failed: Authentication exception for user {}: {}", loginRequestDTO.emailId(), e.getMessage());
             throw new IllegalArgumentException("Invalid Credentials");
         }
 
-        user.setStatus(UserStatus.ONLINE);
-        userRepository.save(user);
-        List<RefreshToken> existingRefreshTokens = refreshTokenRepository.findByUserAndRevokedFalse(user);
-        existingRefreshTokens.forEach(token -> { token.setRevoked(true); refreshTokenRepository.save(token); });
+        userService.connect(user.getId());
 
+        // Revoke all existing refresh tokens for the user
+        List<RefreshToken> existingRefreshTokens = refreshTokenRepository.findByUserAndRevokedFalse(user);
+        existingRefreshTokens.forEach(token -> {
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+        });
+
+        // Generate new access and refresh tokens
         String accessToken = jwtService.generateAccessToken(user.getEmailId());
         RefreshToken refreshToken = jwtService.generateRefreshToken(user.getId());
-        logger.info("User {} logged in successfully", user.getEmailId());
         return userMapper.toLoginResponseDTO(user, accessToken, refreshToken.getToken());
     }
 
@@ -127,7 +131,7 @@ public class AuthenticationService {
                     refreshTokenRepository.save(refreshToken);
                 });
                 userService.disconnect(user.getId());
-                logger.info("User {} logged out", user.getEmailId());
+                user.setLastSeen(Instant.now());
             });
         }
     }
@@ -158,17 +162,20 @@ public class AuthenticationService {
      */
     public void changePassword(PasswordChangeRequestDTO request){
         User user = userRepository.findByEmailId(request.emailId())
-                .orElseThrow(() -> {
-                    logger.warn("Password change failed: User not found for email {}", request.emailId());
-                    return new IllegalArgumentException("User not found with the emailId" + request.emailId());
-                });
+                .orElseThrow(() -> new IllegalArgumentException("User not found with the emailId" + request.emailId()));
 
         if(!passwordEncoder.matches(request.oldPassword(), user.getPassword())){
-            logger.warn("Password change failed: Incorrect old password for user {}", request.emailId());
             throw new IllegalArgumentException("Old Password is incorrect");
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+        
+        // Send password change notification email
+        try {
+            emailService.sendPasswordChangeNotification(user.getEmailId(), user.getUserName());
+        } catch (Exception e) {
+            logger.error("Failed to send password change notification to {}", user.getEmailId(), e);
+        }
         logger.info("Password changed for user {}", user.getEmailId());
     }
 
@@ -195,7 +202,6 @@ public class AuthenticationService {
         user.setEmailVerified(true);
         userRepository.save(user);
         emailVerificationTokenRepository.delete(verificationToken);
-        logger.info("Email verified for user {}", user.getEmailId());
     }
 
     /**
@@ -208,19 +214,18 @@ public class AuthenticationService {
     @Transactional
     public void resetPassword(String token, String newPassword){
         PasswordResetToken resetToken = resetTokenRepository.findByToken(token)
-                .orElseThrow(() -> {
-                    logger.warn("Password reset failed: Invalid token {}", token);
-                    return new IllegalArgumentException("Invalid or expired Password Reset Token");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired password reset token"));
+
         if (resetToken.getExpiryDate().isBefore(Instant.now())){
-            logger.warn("Password reset failed: Token expired {}", token);
-            throw new IllegalArgumentException("Password reset token has expired");
+            resetTokenRepository.delete(resetToken);
+            throw new IllegalArgumentException("Password reset token has expired. Please request a new one.");
         }
+
         User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         resetTokenRepository.delete(resetToken);
-        logger.info("Password reset for user {}", user.getEmailId());
+        logger.info("Password reset successfully for user {}", user.getEmailId());
     }
 
     /**
@@ -230,14 +235,15 @@ public class AuthenticationService {
      * An email is sent to the user with the reset link.
      * @param emailId The email address of the user
      */
+    @Transactional
     public void sendPasswordResetLink(@NotEmpty String emailId) {
         User user = userRepository.findByEmailId(emailId)
-                .orElseThrow(() -> {
-                    logger.warn("Password reset link request failed: User not found for email {}", emailId);
-                    return new IllegalArgumentException("User not found with the given emailId");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("User not found with the given emailId"));
+
+        resetTokenRepository.deleteByUser(user);
+
         String token = UUID.randomUUID().toString();
-        Instant expiry = Instant.now().plusSeconds(300);
+        Instant expiry = Instant.now().plusSeconds(900); // 15 minutes expiry
 
         PasswordResetToken resetToken = new PasswordResetToken();
         resetToken.setToken(token);
@@ -245,7 +251,8 @@ public class AuthenticationService {
         resetToken.setUser(user);
         resetTokenRepository.save(resetToken);
 
-        String resetLink = "http://localhost:8080/auth/reset-password?token=" + token;
+        String resetLink = "http://localhost:5173/?token=" + token;
+
         emailService.sendPasswordResetEmail(user.getEmailId(), resetLink);
         logger.info("Password reset link sent to {}", user.getEmailId());
     }

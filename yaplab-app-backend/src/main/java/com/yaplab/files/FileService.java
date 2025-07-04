@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileNotFoundException;
@@ -33,10 +34,8 @@ public class FileService {
      * Directory where uploaded files are stored.
      */
     @Value("${file.upload-dir:uploads}")
-    private String uploadDir;
-
-    /**
-     * Maximum file size allowed is only 50MB.
+    private String uploadDir;    /**
+     * Maximum file size allowed is 50MB for all file types.
      */
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;
 
@@ -60,32 +59,49 @@ public class FileService {
      * @param id ID of the file.
      * @return an upload responseDTO
      */
-    public FileUploadResponseDTO uploadFile(MultipartFile file, Long id) throws IOException {
-        logger.info("Attempting to upload file: {} for user ID: {}", file.getOriginalFilename(), id);
-
-        if(file.getSize()>MAX_FILE_SIZE){
+    @Transactional
+    public FileUploadResponseDTO uploadFile(MultipartFile file, Long id) throws IOException {        String contentType = file.getContentType();
+        
+        if(file.getSize() > MAX_FILE_SIZE){
             logger.warn("File upload failed for user ID {}: File size exceeds max limit ({} bytes)", id, MAX_FILE_SIZE);
             throw new IllegalArgumentException("File size exceeds 50MB");
         }
         String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path uploadPath = Paths.get(uploadDir);
-        if(!Files.exists(uploadPath)){
-            Files.createDirectories(uploadPath);
-        }
-        Path filePath = uploadPath.resolve(fileName);
-        file.transferTo(filePath.toFile());
+        
+        // Determine subdirectory based on file type
+        String subDir = getSubDirectoryForFileType(contentType);
+        
+        // Create absolute path for upload directory
+        Path baseUploadPath = Paths.get(uploadDir).toAbsolutePath();
+        Path uploadPath = baseUploadPath.resolve(subDir);
 
-        File files = new File(
-                fileName,
-                file.getContentType(),
+        
+        // Create the type-specific directory structure
+        try {
+            Files.createDirectories(uploadPath);
+        } catch (IOException e) {
+            logger.error("Failed to create directory: {}", uploadPath, e);
+            throw new IOException("Failed to create upload directory: " + uploadPath, e);
+        }
+        
+        // Store the relative path for the file (includes subdirectory)
+        String relativePath = subDir + "/" + fileName;
+        Path filePath = uploadPath.resolve(fileName);
+        
+        try {
+            file.transferTo(filePath.toFile());
+        } catch (IOException e) {
+            logger.error("Failed to save file to: {}", filePath, e);
+            throw new IOException("Failed to save file: " + filePath, e);
+        }File files = new File(
+                relativePath, // Store relative path instead of just filename
+                contentType,
                 file.getSize(),
                 null,
                 userService.getUserEntityByID(id)
         );
         File savedFile = filesRepository.save(files);
-        savedFile.setFileUrl("/file/download/" + savedFile.getId());
-        filesRepository.save(savedFile);
-        logger.info("File uploaded successfully with ID: {} for user ID: {}", savedFile.getId(), id);
+        savedFile.setFileUrl("/files/download/" + savedFile.getId());
         return fileMapper.toFileUploadResponseDTO(savedFile);
     }
 
@@ -96,21 +112,24 @@ public class FileService {
      * @return a resource of type inputStreamResource
      */
     public Resource downloadFile(Long fileId) throws IOException {
-        logger.info("Attempting to download file with ID: {}", fileId);
         File file = filesRepository.findById(fileId)
                 .orElseThrow(() -> {
                     logger.warn("File download failed: File not found with ID: {}", fileId);
                     return new IllegalArgumentException("File not found with ID: " + fileId);
                 });
-        Path filePath = Paths.get(uploadDir).resolve(file.getFileName());
+        
+        // Use absolute path for file resolution
+        Path baseUploadPath = Paths.get(uploadDir).toAbsolutePath();
+        Path filePath = baseUploadPath.resolve(file.getFileName());
 
         try {
-            logger.info("File found on disk: {}", file.getFileName());
             return new InputStreamResource(Files.newInputStream(filePath));
         } catch (NoSuchFileException e) {
-            throw new FileNotFoundException("File not found on disk: " + file.getFileName()); // Logged by the exception handler if not caught
+            logger.error("File not found on disk: {}", filePath);
+            throw new FileNotFoundException("File not found on disk: " + filePath);
         } catch (IOException e) {
-            throw new IOException("Error reading file: " + file.getFileName(), e);
+            logger.error("Error reading file: {}", filePath, e);
+            throw new IOException("Error reading file: " + filePath, e);
         }
     }
 
@@ -118,20 +137,24 @@ public class FileService {
      * Deletes the file from the directory and it's details from database
      * @param id ID of the file
      */
+    @Transactional
     public void deleteFile(Long id) throws IOException {
-        logger.info("Attempting to delete file with ID: {}", id);
         File file = filesRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.warn("File deletion failed: File not found with ID: {}", id);
                     return new IllegalArgumentException("File not found");
                 });
-        Path filePath = Paths.get(uploadDir).resolve(file.getFileName());
+        
+        // Use absolute path for file resolution
+        Path baseUploadPath = Paths.get(uploadDir).toAbsolutePath();
+        Path filePath = baseUploadPath.resolve(file.getFileName());
+        
         try {
-            Files.deleteIfExists(filePath);
+            boolean deleted = Files.deleteIfExists(filePath);
             filesRepository.delete(file);
-            logger.info("File deleted successfully with ID: {}", id);
         } catch (IOException e) {
-            throw new IOException("Failed to delete file on disk: " + file.getFileName(), e); // Logged by the exception handler if not caught
+            logger.error("Failed to delete file on disk: {}", filePath, e);
+            throw new IOException("Failed to delete file on disk: " + filePath, e);
         }
     }
 
@@ -140,7 +163,6 @@ public class FileService {
      * @param id ID of the file
      */
     public FileUploadResponseDTO getFileInfo(Long id){
-        logger.info("Attempting to get file info for ID: {}", id);
         File file = filesRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.warn("Get file info failed: File not found with ID: {}", id);
@@ -155,4 +177,29 @@ public class FileService {
     public String getUploadDir(){
         return uploadDir;
     }
+
+    /**
+     * Determines the subdirectory for file storage based on content type
+     * @param contentType MIME type of the file
+     * @return subdirectory name
+     */
+    private String getSubDirectoryForFileType(String contentType) {
+        if (contentType == null) {
+            return "other";
+        }
+        
+        if (contentType.startsWith("image/")) {
+            if (contentType.equals("image/gif")) {
+                return "gifs";
+            }
+            return "images";
+        } else if (contentType.startsWith("audio/")) {
+            return "audio";
+        } else if (contentType.startsWith("video/")) {
+            return "videos";
+        } else {
+            return "documents";
+        }
+    }
+
 }

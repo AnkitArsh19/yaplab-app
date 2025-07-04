@@ -1,0 +1,47 @@
+.avatar-container {
+    position: relative;
+    display: inline-block;
+}
+
+.group-indicator {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    border: 1px solid #e9ecef;
+    z-index: 1;
+}
+
+.group-icon {
+    font-size: 10px;
+    line-height: 1;
+}
+
+.avatar-container[data-size="small"] .group-indicator {
+    width: 14px;
+    height: 14px;
+    bottom: -1px;
+    right: -1px;
+}
+
+.avatar-container[data-size="small"] .group-icon {
+    font-size: 8px;
+}
+
+.avatar-container[data-size="large"] .group-indicator {
+    width: 24px;
+    height: 24px;
+    bottom: -3px;
+    right: -3px;
+}
+
+.avatar-container[data-size="large"] .group-icon {
+    font-size: 12px;
+}

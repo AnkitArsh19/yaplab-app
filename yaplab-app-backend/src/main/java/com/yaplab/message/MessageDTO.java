@@ -12,6 +12,7 @@ import java.util.Objects;
  * @param receiverId ID of the user receiving the message (optional).
  * @param content    Content of the message (optional).
  * @param groupId    ID of the group to which the message is sent (optional).
+ * @param fileId     ID of an existing file in the system (optional).
  * @param fileUrl    URL of the file attached to the message (optional).
  * @param fileName   Name of the file attached to the message (optional).
  * @param fileSize   Size of the file attached to the message in bytes (optional).
@@ -25,6 +26,7 @@ public record MessageDTO(
         Long receiverId,
         String content,
         Long groupId,
+        Long fileId,
         String fileUrl,
         String fileName,
         Long fileSize,
@@ -46,7 +48,7 @@ public record MessageDTO(
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MessageDTO that = (MessageDTO) o;
-        return edited == that.edited && forwarded == that.forwarded && Objects.equals(senderId, that.senderId) && Objects.equals(receiverId, that.receiverId) && Objects.equals(content, that.content) && Objects.equals(groupId, that.groupId) && Objects.equals(fileUrl, that.fileUrl) && Objects.equals(fileName, that.fileName) && Objects.equals(fileSize, that.fileSize) && Objects.equals(repliedToMessageId, that.repliedToMessageId) && Objects.equals(editTimestamp, that.editTimestamp);
+        return edited == that.edited && forwarded == that.forwarded && Objects.equals(senderId, that.senderId) && Objects.equals(receiverId, that.receiverId) && Objects.equals(content, that.content) && Objects.equals(groupId, that.groupId) && Objects.equals(fileId, that.fileId) && Objects.equals(fileUrl, that.fileUrl) && Objects.equals(fileName, that.fileName) && Objects.equals(fileSize, that.fileSize) && Objects.equals(repliedToMessageId, that.repliedToMessageId) && Objects.equals(editTimestamp, that.editTimestamp);
     }
 
     /**
@@ -56,7 +58,7 @@ public record MessageDTO(
      */
     @Override
     public int hashCode() {
-        return Objects.hash(senderId, receiverId, content, groupId, fileUrl, fileName, fileSize, repliedToMessageId, edited, forwarded, editTimestamp);
+        return Objects.hash(senderId, receiverId, content, groupId, fileId, fileUrl, fileName, fileSize, repliedToMessageId, edited, forwarded, editTimestamp);
     }
 
     /**
@@ -65,12 +67,12 @@ public record MessageDTO(
      * @return a string representation of the MessageDTO object.
      */
     @Override
-    public String toString() {
-        return "MessageDTO{" +
+    public String toString() {        return "MessageDTO{" +
                 "senderId=" + senderId +
                 ", receiverId=" + receiverId +
                 ", content='" + content + '\'' +
                 ", groupId=" + groupId +
+                ", fileId=" + fileId +
                 ", fileUrl='" + fileUrl + '\'' +
                 ", fileName='" + fileName + '\'' +
                 ", fileSize=" + fileSize +

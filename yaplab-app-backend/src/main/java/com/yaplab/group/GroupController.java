@@ -77,4 +77,47 @@ public class GroupController {
         groupService.updateProfilePicture(id, file);
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Gets detailed information about a group including creator, members, and metadata.
+     * @param id ID of the group.
+     * @return Response Entity containing detailed group information.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<GroupResponseDTO> getGroupDetails(@PathVariable Long id) {
+        GroupResponseDTO groupDetails = groupService.getGroupDetails(id);
+        return ResponseEntity.ok(groupDetails);
+    }
+
+    /**
+     * Deletes a group. Only the group creator can delete the group.
+     * @param id ID of the group to delete.
+     * @param userId ID of the user attempting to delete (must be creator).
+     * @return Response Entity indicating successful deletion.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteGroup(
+            @PathVariable Long id,
+            @RequestParam Long userId
+    ) {
+        groupService.deleteGroup(id, userId);
+        return ResponseEntity.ok("Group deleted successfully.");
+    }
+
+    /**
+     * Updates the group name. Only the group creator can update.
+     * @param id Group ID to update
+     * @param userId ID of the user making the change (must be creator)
+     * @param groupUpdateDTO The new group data
+     * @return Updated group response
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<GroupResponseDTO> updateGroup(
+            @PathVariable Long id,
+            @RequestParam Long userId,
+            @RequestBody GroupUpdateDTO groupUpdateDTO
+    ) {
+        GroupResponseDTO updatedGroup = groupService.updateGroupName(id, groupUpdateDTO, userId);
+        return ResponseEntity.ok(updatedGroup);
+    }
 }

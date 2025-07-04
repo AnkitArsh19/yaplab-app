@@ -1,0 +1,22 @@
+.chat-window {
+    display: flex;
+    position: relative;
+    height: calc(100vh - 60px);
+    width: calc(100vw - 60px);
+    margin: 30px 0px 0px 30px;
+}
+
+.sidebar-window {
+    display: flex;
+    position: relative;
+    width: 25%;
+    min-width: 300px;
+    flex-shrink: 0;
+}
+
+.chatarea-window {
+    display: flex;
+    margin-left: 50px;
+    position: relative;
+    width: 75%;
+}

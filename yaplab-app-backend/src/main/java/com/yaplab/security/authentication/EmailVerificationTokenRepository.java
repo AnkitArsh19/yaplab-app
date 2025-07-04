@@ -28,9 +28,26 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
     List<EmailVerificationToken> findByUser(User user);
 
     /**
+     * Finds email change tokens for a user
+     * @param user The user
+     * @param tokenType The token type (EMAIL_CHANGE)
+     * @return List of email change tokens for the user
+     */
+    List<EmailVerificationToken> findByUserAndTokenType(User user, EmailVerificationToken.TokenType tokenType);
+
+    /**
      * Deletes all tokens for a specific user using a custom query
+     * Modifying annotation is used to indicate that this is a modifying query
+     * clearAutomatically is set to true to clear the persistence context after the operation
      */
     @Modifying(clearAutomatically = true)
     @Query(value = "DELETE FROM email_verification_token WHERE user_id = :userId", nativeQuery = true)
     void deleteByUserId(@Param("userId") Long userId);
+
+    /**
+     * Deletes all tokens of a specific type for a user
+     */
+    @Modifying(clearAutomatically = true)
+    @Query(value = "DELETE FROM email_verification_token WHERE user_id = :userId AND token_type = :tokenType", nativeQuery = true)
+    void deleteByUserIdAndTokenType(@Param("userId") Long userId, @Param("tokenType") String tokenType);
 }

@@ -1,0 +1,293 @@
+@font-face {
+    font-family: "Regular";
+    src: url("/src/assets/fonts/Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+.about-project-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.about-project-modal {
+    background-color: #fff0e6;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+}
+
+.about-project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid rgba(162, 127, 104, 0.2);
+    background-color: rgba(162, 127, 104, 0.05);
+}
+
+.about-project-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.about-project-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.about-project-close-btn:hover {
+    background-color: rgba(162, 127, 104, 0.1);
+}
+
+.about-project-close-btn img {
+    width: 20px;
+    height: 20px;
+}
+
+.about-project-content {
+    padding: 24px;
+}
+
+.about-project-logo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 32px;
+    padding: 20px;
+    background-color: rgba(162, 127, 104, 0.05);
+    border-radius: 15px;
+}
+
+.about-project-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.about-project-name {
+    font-size: 32px;
+    font-weight: 700;
+    color: #a27f68;
+    margin: 0;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    text-align: center;
+}
+
+.about-project-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.about-section {
+    padding: 20px;
+    background-color: rgba(162, 127, 104, 0.03);
+    border-radius: 12px;
+    border-left: 4px solid #a27f68;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+    opacity: 0.8;
+    filter: invert(46%) sepia(15%) saturate(568%) hue-rotate(345deg) brightness(93%) contrast(87%);
+}
+
+.section-header h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #a27f68;
+    margin: 0;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.about-section p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #2c3e50;
+    margin: 0 0 16px 0;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.about-section p:last-child {
+    margin-bottom: 0;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+}
+
+.feature-list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 16px;
+    color: #2c3e50;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    padding: 8px 12px;
+    background-color: rgba(162, 127, 104, 0.05);
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.feature-list li:hover {
+    background-color: rgba(162, 127, 104, 0.1);
+}
+
+.list-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    opacity: 0.7;
+    filter: invert(46%) sepia(15%) saturate(568%) hue-rotate(345deg) brightness(93%) contrast(87%);
+}
+
+.about-project-footer {
+    margin-top: 32px;
+    padding: 24px;
+    border-top: 1px solid rgba(162, 127, 104, 0.2);
+    background-color: rgba(162, 127, 104, 0.05);
+    border-radius: 0 0 20px 20px;
+}
+
+.social-links {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    background-color: #fff0e6;
+    border: 2px solid #a27f68;
+    border-radius: 50px;
+    text-decoration: none;
+    color: #a27f68;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.social-link:hover {
+    background-color: #a27f68;
+    color: #fff0e6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(162, 127, 104, 0.3);
+}
+
+.social-link img {
+    width: 24px;
+    height: 24px;
+    transition: filter 0.3s ease;
+}
+
+.social-link:hover img {
+    filter: brightness(0) saturate(100%) invert(100%);
+}
+
+@media (max-width: 768px) {
+    .about-project-modal {
+        max-width: 95%;
+        margin: 10px;
+    }
+    
+    .about-project-content {
+        padding: 16px;
+    }
+    
+    .about-project-header {
+        padding: 16px;
+    }
+    
+    .about-project-logo {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .about-project-name {
+        font-size: 24px;
+    }
+    
+    .section-header h4 {
+        font-size: 18px;
+    }
+    
+    .about-section p {
+        font-size: 14px;
+    }
+    
+    .feature-list li {
+        font-size: 14px;
+    }
+    
+    .social-links {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .social-link {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+.about-project-modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.about-project-modal::-webkit-scrollbar-track {
+    background: rgba(162, 127, 104, 0.1);
+    border-radius: 4px;
+}
+
+.about-project-modal::-webkit-scrollbar-thumb {
+    background: #a27f68;
+    border-radius: 4px;
+}
+
+.about-project-modal::-webkit-scrollbar-thumb:hover {
+    background: #8C433D;
+}

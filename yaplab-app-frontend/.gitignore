@@ -9,26 +9,26 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
-.pnp
+/.pnp
 .pnp.js
 
-# Testing
-coverage
-
-# Production
-build
+# Build outputs
 dist
 dist-ssr
-*.local
+build
 
-# Environment file
+# Testing
+/coverage
+
+# Environment files
+*.local
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Editor directories and file
+# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -39,12 +39,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Node.js dependencies
-node_modules/
+# Vite
+.vite/
 
-# Frontend build output
-dist/
-# or build/ if you configured Vite differently
-
-
-
+# Temporary files
+*.bak
+*.tmp
+.cache

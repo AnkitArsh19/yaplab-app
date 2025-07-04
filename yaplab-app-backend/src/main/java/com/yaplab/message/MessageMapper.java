@@ -21,10 +21,20 @@ public class MessageMapper {
      */
     private MessageType determineMessageTypeFromFileType(String fileType) {
         if (fileType == null) return MessageType.TEXT;
-        if (fileType.startsWith("image/")) return MessageType.IMAGE;
-        if (fileType.startsWith("video/")) return MessageType.VIDEO;
-        if (fileType.startsWith("audio/")) return MessageType.AUDIO;
-        return MessageType.TEXT;
+
+        if (fileType.equals("image/gif"))
+            return MessageType.GIF;
+
+        if (fileType.startsWith("image/"))
+            return MessageType.IMAGE;
+
+        if (fileType.startsWith("video/"))
+            return MessageType.VIDEO;
+
+        if (fileType.startsWith("audio/"))
+            return MessageType.AUDIO;
+
+        return MessageType.DOCUMENT;
     }
 
     /**
@@ -70,6 +80,7 @@ public class MessageMapper {
 
     /**
      * Maps parameters to a message entity for a forwarded message.
+     * Automatically determines if the target chatroom is personal or group.
      *
      * @param chatroom        The chatroom the message is being forwarded to.
      * @param sender          The sender of the forwarded message.
@@ -80,7 +91,17 @@ public class MessageMapper {
      */
     public Message createForwardedMessage(ChatRoom chatroom, User sender, String content, File file, Message originalMessage) {
         MessageType messageType = (file != null) ? determineMessageTypeFromFileType(file.getFileType()) : MessageType.TEXT;
-        Message forwardedMessage = new Message(chatroom, sender, (User) null, content, messageType, MessageStatus.SENT, originalMessage, file);
+        
+        Message forwardedMessage;
+        if (chatroom.getChatroomType() == com.yaplab.enums.ChatRoomType.GROUP) {
+            // For group chats, we need to get the group from the chatroom
+            Group targetGroup = chatroom.getGroup();
+            forwardedMessage = new Message(chatroom, sender, targetGroup, content, messageType, MessageStatus.SENT, null, file);
+        } else {
+            // For personal chats, receiver will be determined by the chatroom participants
+            forwardedMessage = new Message(chatroom, sender, (User) null, content, messageType, MessageStatus.SENT, null, file);
+        }
+        
         forwardedMessage.setForwarded(true);
         return forwardedMessage;
     }
@@ -111,7 +132,6 @@ public class MessageMapper {
                 uploadedByUserId = file.getUploadedBy().getId();
                 uploadedByUserName = file.getUploadedBy().getUserName();
             }
-
         }
 
         if (message.getReplyTo() != null) {
@@ -125,6 +145,7 @@ public class MessageMapper {
 
         return new MessageResponseDTO(
                 message.getId(),
+                message.getSender().getId(),
                 message.getSender().getUserName(),
                 message.getContent(),
                 message.getTimestamp(),
@@ -137,8 +158,8 @@ public class MessageMapper {
                 fileType,
                 repliedToMessageDTO,
                 message.getChatroom().getChatroomId(),
-                false,
-                false,
+                message.isEdited(),
+                message.isForwarded(),
                 message.getEditTimestamp()
         );
     }

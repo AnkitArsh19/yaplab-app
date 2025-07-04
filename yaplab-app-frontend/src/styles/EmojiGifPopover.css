@@ -1,0 +1,178 @@
+.emoji-gif-popover {
+  position: absolute;
+  bottom: 60px;
+  left: 10px;
+  z-index: 100;
+  background: #fff6ee;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(140, 67, 61, 0.10), 0 1.5px 6px rgba(0,0,0,0.04);
+  border: 1.5px solid #e0d2c0;
+  min-width: 360px;
+  min-height: 380px;
+  max-width: 380px;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.popover-tabs {
+  display: flex;
+  background: #f3e3d3;
+  border-bottom: 1px solid #e0d2c0;
+}
+
+.popover-tab {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #8C433D;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border-radius: 0;
+  font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.popover-tab.active {
+  background: #e7cfc0;
+  color: #1a3033;
+  font-weight: 600;
+  border-bottom: 2.5px solid #8C433D;
+}
+
+.popover-content {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+  background: #fff6ee;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add emoji-mart customization to match app theme */
+.emoji-mart {
+  font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.emoji-mart-bar {
+  background: transparent !important;
+  border: none !important;
+}
+
+.emoji-mart-search {
+  background: #fff0e6 !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 15px !important;
+  padding: 8px 12px !important;
+  margin: 8px !important;
+  font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif !important;
+  position: relative;
+}
+
+.emoji-mart-search input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif !important;
+  color: #333 !important;
+  width: 100% !important;
+  padding: 0 0 0 24px !important;
+}
+
+.emoji-mart-search input::placeholder {
+  color: #999 !important;
+}
+
+.emoji-mart-search::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background-image: url('/search-icon.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+  z-index: 1;
+}
+
+.emoji-mart-search-icon {
+  display: none !important;
+}
+
+.emoji-mart-category-label {
+  background: #fff6ee !important;
+  color: #8C433D !important;
+  font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  border: none !important;
+}
+
+.emoji-mart-category {
+  background: transparent !important;
+}
+
+.emoji-mart-category .emoji-mart-category-label {
+  background: #fff6ee !important;
+}
+
+.emoji-mart-category .emoji-mart-category-list {
+  background: transparent !important;
+}
+
+.emoji-mart *:not(.emoji-mart-search):not(.emoji-mart-emoji):not(.emoji-mart-anchor) {
+  background: transparent;
+}
+
+.emoji-mart-search {
+  background: #fff0e6 !important;
+}
+
+.emoji-mart-anchor:hover,
+.emoji-mart-anchor-selected {
+  color: #1a3033 !important;
+  background: rgba(140, 67, 61, 0.15) !important;
+  border-radius: 6px !important;
+}
+
+.emoji-mart-scroll {
+  height: 280px !important;
+  overflow-y: hidden !important;
+}
+
+.emoji-mart-scroll:hover {
+  overflow-y: auto !important;
+}
+
+/* Custom scrollbar for emoji picker */
+.emoji-mart-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.emoji-mart-scroll::-webkit-scrollbar-track {
+  background: #fff0e6;
+  border-radius: 3px;
+}
+
+.emoji-mart-scroll::-webkit-scrollbar-thumb {
+  background: #c9b8ab;
+  border-radius: 3px;
+}
+
+.emoji-mart-scroll::-webkit-scrollbar-thumb:hover {
+  background: #8C433D;
+}
+
+.emoji-mart-anchor {
+  color: #8C433D !important;
+}

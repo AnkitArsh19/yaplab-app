@@ -10,6 +10,8 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Message entity to store id, sender_id, receiver_id, content, message_type, message_status, etc.
@@ -57,7 +59,7 @@ public class Message {
     /**
      * Content of the message in text format.
      */
-    @Column(nullable = true)
+    @Column(nullable = true, length = 2000)
     private String content;
 
     /**
@@ -92,7 +94,7 @@ public class Message {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MessageStatus messageStatus;
+    private MessageStatus messageStatus = MessageStatus.NOT_SENT;
 
     /**
      * If this message is a reply, it stores the referenced message
@@ -120,6 +122,18 @@ public class Message {
      */
     @Column(nullable = true)
     private Instant editTimestamp;
+
+    /**
+     * Set of user IDs who have cleared/hidden this message from their view
+     * This is useful for personal message management.
+     * ElementCollection is used to store a collection of simple types.
+     * This allows us to track which users have hidden the message.
+     * CollectionTable is used to define the table that holds the collection.
+     */
+    @ElementCollection
+    @CollectionTable(name = "message_hidden_for_users", joinColumns = @JoinColumn(name = "message_id"))
+    @Column(name = "user_id")
+    private Set<Long> hiddenForUsers = new HashSet<>();
 
     /**
      * Default Constructor.
@@ -279,6 +293,14 @@ public class Message {
 
     public void setEditTimestamp(Instant editTimestamp) {
         this.editTimestamp = editTimestamp;
+    }
+
+    public Set<Long> getHiddenForUsers() {
+        return hiddenForUsers;
+    }
+
+    public void setHiddenForUsers(Set<Long> hiddenForUsers) {
+        this.hiddenForUsers = hiddenForUsers;
     }
 
     public void markAsEdited() {

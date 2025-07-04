@@ -4,6 +4,8 @@ import com.yaplab.enums.ChatRoomType;
 import com.yaplab.group.Group;
 import com.yaplab.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -34,9 +36,24 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
     Optional<ChatRoom> findByGroupAndChatroomType(Group group, ChatRoomType chatroomType);
 
     /**
-     * Find all chatrooms for a particular user
+     * Find all chatrooms for a particular user ordered by last activity (most recent first)
      * @param user The user object to get the user
-     * @return list of chatrooms
+     * @return list of chatrooms ordered by lastActivity descending
+     */
+    @Query("SELECT c FROM ChatRoom c WHERE :user MEMBER OF c.participants ORDER BY c.lastActivity DESC")
+    List<ChatRoom> findAllByParticipantsContainingOrderByLastActivityDesc(@Param("user") User user);
+
+    /**
+     * Find all chatrooms associated with a specific group
+     * @param group Group object to get the group
+     * @return List of chatrooms associated with the group
+     */
+    List<ChatRoom> findByGroup(Group group);
+
+    /**
+     * Find all chatrooms that contain a specific user as a participant
+     * @param user User object to get the user
+     * @return List of chatrooms that contain the user
      */
     List<ChatRoom> findAllByParticipantsContaining(User user);
 }

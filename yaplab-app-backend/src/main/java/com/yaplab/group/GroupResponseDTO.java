@@ -1,5 +1,6 @@
 package com.yaplab.group;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -8,10 +9,20 @@ import java.util.List;
  * @param id ID of the group
  * @param name name of the group
  * @param userNames List of users associated with the group
+ * @param createdById ID of the user who created the group
+ * @param createdByName Name of the user who created the group
+ * @param createdAt When the group was created
+ * @param profilePictureUrl URL of the group's profile picture
+ * @param memberCount Number of members in the group
  */
 public record GroupResponseDTO(
     Long id,
     String name,
-    List<String> userNames
+    List<String> userNames,
+    Long createdById,
+    String createdByName,
+    LocalDateTime createdAt,
+    String profilePictureUrl,
+    int memberCount
 ) {
 }

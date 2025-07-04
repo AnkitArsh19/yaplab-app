@@ -1,67 +1,133 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AuthPage from './Components/AuthPage.jsx';
-import ContactCard from './Components/ContactCard.jsx';
-import Sidebar from './Components/Sidebar.jsx';
+import AuthPage from './components/auth/AuthPage';
+import ChatWindow from './components/chat/ChatWindow';
+import EmailChangeConfirmation from './components/modals/EmailChangeConfirmation';
+import apiClient from './utils/apiClient.js';
+import websocketService from './utils/websocketService.js';
 
 function App() {
-    const [chats, setChats] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [userId, setUserId] = useState(null);
+    const [user, setUser] = useState(null);
+    const [wsConnectionState, setWsConnectionState] = useState('disconnected');
 
     useEffect(() => {
         const token = localStorage.getItem('authToken');
+        const refreshToken = localStorage.getItem('refreshToken');
         const storedUserId = localStorage.getItem('userId');
-        if (token && storedUserId) {
+        const storedUserName = localStorage.getItem('userName');
+        const storedEmailId = localStorage.getItem('emailId');
+        
+        if (token && refreshToken && storedUserId) {
             setIsAuthenticated(true);
-            setUserId(parseInt(storedUserId));
-            fetchChats(token, parseInt(storedUserId));
+            const userData = {
+                id: parseInt(storedUserId),
+                userName: storedUserName,
+                emailId: storedEmailId
+            };
+            setUser(userData);
+            
+            // Set up WebSocket connection listeners
+            setupWebSocketListeners();
+            
+            // Attempt WebSocket connection after page reload
+            connectWebSocket(userData);
         }
+
+        // Handle browser/tab close to disconnect websocket
+        const handleBeforeUnload = () => {
+            try {
+                websocketService.disconnect();
+            } catch (e) {
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
     }, []);
 
-    const fetchChats = async (token, userId) => {
-        setLoading(true);
+    const setupWebSocketListeners = () => {
+    // Set up connection status listener
+    const unsubscribeConnection = websocketService.onConnectionChange((status) => {
+        setWsConnectionState(status);
+    });
+
+    // Set up disconnection listener for auth errors and max attempts
+    const unsubscribeDisconnection = websocketService.onDisconnectionChange((reason) => {
+        if (reason === 'auth_error') {
+            setWsConnectionState('auth_error');
+        } else if (reason === 'max_attempts_reached') {
+            setWsConnectionState('max_attempts_reached');
+        }
+    });
+
+    // Store cleanup functions
+    window.wsCleanup = () => {
+        unsubscribeConnection();
+        unsubscribeDisconnection();
+    };
+};
+
+    const connectWebSocket = async (userData) => {
         try {
-            const response = await fetch(`http://localhost:8080/chatrooms/user/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                setChats(data);
-            } else {
-                throw new Error('Failed to fetch chats');
-            }
+            await websocketService.connect(userData);
         } catch (error) {
-            console.error('Error fetching chats:', error);
-            setError('Failed to load chats. Please try again.');
-        } finally {
-            setLoading(false);
+            console.error('WebSocket connection failed:', error);
+            
+            // If authentication failed, logout user
+            if (error.message?.includes('Authentication failed')) {
+                console.error('WebSocket authentication failed - forcing logout');
+                handleLogout();
+            }
         }
     };
 
-    const handleLogin = (loginData) => {
+    const handleLogin = async (loginData) => {
         localStorage.setItem('authToken', loginData.accessToken);
+        localStorage.setItem('refreshToken', loginData.refreshToken);
         localStorage.setItem('userId', loginData.id.toString());
+        localStorage.setItem('userName', loginData.userName);
+        localStorage.setItem('emailId', loginData.emailId);
+        
+        const userData = {
+            id: loginData.id,
+            userName: loginData.userName,
+            emailId: loginData.emailId
+        };
+        setUser(userData);
         setIsAuthenticated(true);
-        setUserId(loginData.id);
-        fetchChats(loginData.accessToken, loginData.id);
+
+        // Set up listeners before connecting
+        setupWebSocketListeners();
+        
+        // Connect WebSocket
+        await connectWebSocket(userData);
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userId');
-        setIsAuthenticated(false);
-        setUserId(null);
-        setChats([]);
-    };
-
-    const handleSelectChat = (chatId) => {
-        console.log("Selected chat ID:", chatId);
+    const handleLogout = async () => {
+        try {
+            websocketService.disconnect();
+            setWsConnectionState('disconnected');
+            
+            await apiClient.post('/auth/logout');
+        } catch (error) {
+            console.error('Logout API call failed:', error);
+        } finally {
+            // Clean up WebSocket listeners
+            if (window.wsCleanup) {
+                window.wsCleanup();
+                delete window.wsCleanup;
+            }
+            
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('emailId');
+            setIsAuthenticated(false);
+            setUser(null);
+        }
     };
 
     return (
@@ -75,15 +141,17 @@ function App() {
                     path="/chat" 
                     element={
                         isAuthenticated ? 
-                        <Sidebar 
-                            chats={chats} 
-                            onSelectChat={handleSelectChat} 
-                            loading={loading}
-                            error={error}
+                        <ChatWindow 
+                            user={user}
                             onLogout={handleLogout}
+                            wsConnectionState={wsConnectionState}
                         /> : 
                         <Navigate to="/" />
                     } 
+                />
+                <Route 
+                    path="/auth/confirm-email-change" 
+                    element={<EmailChangeConfirmation />} 
                 />
             </Routes>
         </div>

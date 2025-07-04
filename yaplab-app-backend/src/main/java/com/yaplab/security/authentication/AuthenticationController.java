@@ -113,10 +113,10 @@ public class AuthenticationController {
                             ));
                 }
             } else if (e.getMessage().contains("User not found")) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "User not found with the provided email."));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "Invalid email or password."));
             } else if (e.getMessage().contains("Invalid Credentials")) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("message", "Invalid email or password."));
             }
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -130,12 +130,18 @@ public class AuthenticationController {
 
     /**
      * Logs out the user.
-     * returns the user registered and saved in the database.
+     * Invalidates the access token and clears user session.
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logoutUser(@RequestHeader("authorization") String authHeader) {
-        authenticationService.logout(authHeader);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> logoutUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            authenticationService.logout(authHeader);
+            return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+        } catch (Exception e) {
+            logger.error("Logout failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Logout failed"));
+        }
     }
 
     /**
@@ -227,10 +233,32 @@ public class AuthenticationController {
      * @param requestDTO contains the token and the new password.
      */
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(
-            @RequestBody ResetPasswordRequestDTO requestDTO
-    ){
-        authenticationService.resetPassword(requestDTO.token(),requestDTO.newPassword());
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequestDTO requestDTO) {
+        try {
+            authenticationService.resetPassword(requestDTO.token(), requestDTO.newPassword());
+            return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Password reset failed for token {}: {}", requestDTO.token(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Password reset failed due to server error"));
+        }
+    }
+
+    /**
+     * Confirms an email change using the verification token.
+     * @param token The verification token from the email link
+     * @return ResponseEntity with success or error message
+     */
+    @PostMapping("/confirm-email-change")
+    public ResponseEntity<Map<String, String>> confirmEmailChange(@RequestParam String token) {
+        try {
+            userService.confirmEmailChange(token);
+            return ResponseEntity.ok(Map.of("message", "Email address updated successfully. Please log in again with your new email."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

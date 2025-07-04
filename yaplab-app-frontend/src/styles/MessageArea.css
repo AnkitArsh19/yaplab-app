@@ -1,0 +1,122 @@
+@font-face {
+    font-family: "Regular";
+    src: url("/src/assets/fonts/Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+.message-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: #fff0e6;
+    position: relative;
+}
+
+.messages-container {
+    flex: 1;
+    padding: 20px 20px 10px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: #fff0e6;
+    position: relative;
+    scroll-behavior: smooth;
+    contain: layout style;
+    isolation: isolate;
+    overflow-x: hidden;
+    min-height: 0;
+}
+
+.messages-container.scroll-disabled {
+    overflow-y: hidden !important;
+}
+
+.loading-messages, .no-messages {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    color: #a27f68;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 1.1rem;
+    opacity: 0.7;
+}
+
+.messages-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: rgba(162, 127, 104, 0.1);
+    border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: rgba(162, 127, 104, 0.3);
+    border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(162, 127, 104, 0.5);
+}
+
+.date-separator {
+    background: rgba(87, 61, 43, 0.4) !important;
+    border-radius: 5px !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+
+    padding: 6px 12px;
+    margin: 12px auto;
+    text-align: center;
+    color: #fff !important;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    max-width: fit-content;
+    align-self: center;
+}
+
+.sticky-date-header {
+    position: absolute !important;
+    top: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1000 !important;
+    
+    background: rgba(87, 61, 43, 0.4) !important;
+    border-radius: 5px !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    
+    padding: 6px 12px;
+    margin: 0;
+    text-align: center;
+    color: #fff !important;
+    font-family: 'Regular', 'Roboto', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    max-width: fit-content;
+    
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+}
+
+.sticky-date-header.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.messages-container.selection-mode {
+    padding: 20px 50px 10px 50px;
+}

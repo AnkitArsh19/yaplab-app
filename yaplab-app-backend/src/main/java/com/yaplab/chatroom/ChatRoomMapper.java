@@ -30,7 +30,9 @@ public class ChatRoomMapper {
                                 user.getEmailId(),
                                 user.getMobileNumber(),
                                 user.getStatus(),
-                                user.getProfilePictureUrl()
+                                user.getProfilePictureUrl(),
+                                user.getLastSeen(),
+                                user.getCreatedAt()
                         ))
                         .collect(Collectors.toList()),
                 chatRoom.getGroup() != null ? new GroupResponseDTO(
@@ -38,7 +40,12 @@ public class ChatRoomMapper {
                         chatRoom.getGroup().getName(),
                         chatRoom.getGroup().getUsers().stream()
                                 .map(User::getUserName)
-                                .collect(Collectors.toList())
+                                .collect(Collectors.toList()),
+                        chatRoom.getGroup().getCreatedBy().getId(),
+                        chatRoom.getGroup().getCreatedBy().getUserName(),
+                        chatRoom.getGroup().getCreatedAt(),
+                        chatRoom.getGroup().getProfilePictureUrl(),
+                        chatRoom.getGroup().getUsers().size()
                 ) : null,
                 chatRoom.getLastActivity()
         );

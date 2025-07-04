@@ -45,7 +45,9 @@ public class UserMapper {
                 user.getEmailId(),
                 user.getMobileNumber(),
                 user.getStatus(),
-                user.getProfilePictureUrl()
+                user.getProfilePictureUrl(),
+                user.getLastSeen(),
+                user.getCreatedAt()
         );
     }
 

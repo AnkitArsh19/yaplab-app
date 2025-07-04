@@ -8,6 +8,7 @@ import java.time.Instant;
  * A Response DTO to send the response from the server to the client.
  * Only sends required information by not exposing the whole Entity.
  * @param id id if the message
+ * @param senderId id of the sender
  * @param senderName sender of the message
  * @param content content of the message
  * @param timestamp timestamp of the message
@@ -19,16 +20,18 @@ import java.time.Instant;
  * @param uploadedByUserName name of the user who uploaded the file if any
  * @param fileType type of the file if any
  * @param repliedToMessage repliedToMessage DTO being replied to
+ * @param chatRoomId chatroom ID
  * @param edited boolean indicating if the message was edited
  * @param forwarded boolean indicating if the message was forwarded
  * @param editTimestamp timestamp of the last edit
  */
 public record MessageResponseDTO (
         Long id,
+        Long senderId,
         String senderName,
         String content,
         Instant timestamp,
-        MessageStatus  messageStatus,
+        MessageStatus messageStatus,
         String fileUrl,
         String fileName,
         Long fileSize,

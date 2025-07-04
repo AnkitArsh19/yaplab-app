@@ -49,7 +49,6 @@ public class SecurityConfig{
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -59,15 +58,21 @@ public class SecurityConfig{
                                 "/auth/login",
                                 "/auth/verify-email",
                                 "/auth/forgot-password",
-                                "/auth/reset-password")
-                        .permitAll()
-                        .anyRequest().authenticated())
-                        .sessionManagement(session -> session.
-                        sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
+                                "/auth/reset-password",
+                                "/auth/refresh",
+                                "/auth/resend-verification",
+                                "/auth/logout"
+                        ).permitAll()
+                        // Allow access to the WebSocket endpoint
+                        .requestMatchers("/ws/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
+
 
     /**
      * Configures CORS settings.
@@ -80,6 +85,8 @@ public class SecurityConfig{
         configuration.addAllowedOrigin("http://localhost:5173");
         configuration.addAllowedMethod("*");
         configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
+        configuration.addExposedHeader("Authorization");
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -119,4 +126,5 @@ public class SecurityConfig{
         provider.setUserDetailsService(userDetailsService);
         return provider;
     }
+
 }

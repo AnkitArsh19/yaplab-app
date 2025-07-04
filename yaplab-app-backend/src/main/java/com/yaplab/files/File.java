@@ -2,9 +2,9 @@ package com.yaplab.files;
 
 import com.yaplab.user.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 /**
  * File entity to store filenames, size, type url and user details.
@@ -42,7 +42,7 @@ public class File {
     /**
      * Url of the file which stores the location of a physical path
      */
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String fileUrl;
 
     /**
@@ -56,8 +56,9 @@ public class File {
     /**
      * Time of upload(permanent)
      */
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private final Instant uploadedAt = Instant.now();
+    private Instant uploadedAt;
 
     /**
      * Default constructor

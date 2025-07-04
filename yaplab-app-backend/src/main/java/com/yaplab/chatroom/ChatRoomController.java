@@ -1,17 +1,21 @@
 package com.yaplab.chatroom;
 
 import com.yaplab.message.MessageResponseDTO;
-import com.yaplab.user.User;
+import com.yaplab.message.MessageStatusService;
+import com.yaplab.message.MessageService;
 import com.yaplab.user.UserDTO;
-import com.yaplab.user.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.*;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST Controller for handling user operations.
@@ -22,12 +26,15 @@ import java.util.List;
 public class ChatRoomController {
     public final ChatRoomService chatRoomService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final UserService userService;
+    private final MessageStatusService messageStatusService;
+    private final MessageService messageService;
 
-    public ChatRoomController(ChatRoomService chatRoomService, SimpMessagingTemplate messagingTemplate, UserService userService) {
+    public ChatRoomController(ChatRoomService chatRoomService, SimpMessagingTemplate messagingTemplate, MessageStatusService messageStatusService, MessageService messageService
+    ){
         this.chatRoomService = chatRoomService;
         this.messagingTemplate = messagingTemplate;
-        this.userService = userService;
+        this.messageStatusService = messageStatusService;
+        this.messageService = messageService;
     }
 
     /**
@@ -68,12 +75,20 @@ public class ChatRoomController {
     /**
      * Returns the list of messages of the particular chatroom
      * @param chatroomId ID of the chatroom
+     * @param userId Optional user ID to filter out messages hidden for this user
      */
     @GetMapping("/{chatroomId}/messages")
     public ResponseEntity<List<MessageResponseDTO>> getMessagesFromChatroom(
-            @PathVariable String chatroomId
+            @PathVariable String chatroomId,
+            @RequestParam(required = false) Long userId
     ){
-        return ResponseEntity.ok(chatRoomService.getMessagesFromChatRoom(chatroomId));
+        if (userId != null) {
+            // Get messages excluding those hidden for this user
+            return ResponseEntity.ok(messageService.getRoomMessages(chatroomId, userId));
+        } else {
+            // Fallback to original method for backward compatibility
+            return ResponseEntity.ok(chatRoomService.getMessagesFromChatRoom(chatroomId));
+        }
     }
 
     /**
@@ -82,56 +97,67 @@ public class ChatRoomController {
      * Header is used to get chatroomId from the header of a STOMP SEND frame
      * @param chatroomId ID of the chatroom
      */
-    @MessageMapping("/chatroom.join")
-    public void joinChatroom(@Payload UserDTO user, @Header("chatroomId") String chatroomId) {
-        chatRoomService.updateLastActivity(chatroomId);
-        messagingTemplate.convertAndSend("/topic/" + chatroomId, user);
+    @MessageMapping("/chatroom.join/{chatroomId}")
+    public void joinChatroom(
+            @DestinationVariable String chatroomId,
+            @Payload UserDTO user,
+            @Header("simpSessionId") String sessionId) {
+
+        // Use the centralized message status service to update message statuses
+        messageStatusService.markUndeliveredMessagesAsDelivered(chatroomId, user.id());
+
+        // Broadcast that user joined the chatroom
+        messagingTemplate.convertAndSend(
+                "/room/" + chatroomId + "/events",
+                Map.of("type", "USER_JOINED", "user", user)
+        );
     }
 
     /**
-     * User leaves the chatroom and last activity is updated.
-     * @param chatroomId ID of the chatroom
-     * @param user userDTO of the user
+     * Clear chat for a specific user - hides all existing messages in the chatroom for that user
      */
-    @MessageMapping("/chatroom.leave")
-    @SendTo("/topic/{chatroomId}")
-    public UserDTO leaveChatroom(
-            @DestinationVariable String chatroomId,
-            @Payload UserDTO user
-    ){
-        chatRoomService.updateLastActivity(chatroomId);
-        return user;
+    @PostMapping("/{chatroomId}/clear")
+    public ResponseEntity<Map<String, String>> clearChatForUser(
+            @PathVariable String chatroomId,
+            @RequestParam Long userId) {
+        try {
+            messageService.clearChatForUser(chatroomId, userId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Chat cleared successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Failed to clear chat");
+
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
     }
 
     /**
-     * Handles incoming "typing" events from users.
-     * Broadcasts a typing indicator to other users in the chat room.
-     * @param chatroomId The ID of the chat room.
-     * @param principal The authenticated user principal.
+     * Delete personal chat (clear all messages for the user)
      */
-    @MessageMapping("/chat.typing/{chatroomId}")
-    public void handleTypingEvent(
-            @DestinationVariable String chatroomId,
-            Principal principal
-    ) {
-        User user = userService.getUserEntityByEmail(principal.getName());
-        TypingIndicatorMessage typingIndicator = new TypingIndicatorMessage(user.getId(), user.getUserName(), chatroomId, true);
-        messagingTemplate.convertAndSend("/topic/chat/" + chatroomId + "/typing", typingIndicator);
-    }
+    @PostMapping("/{chatroomId}/delete")
+    public ResponseEntity<Map<String, String>> deletePersonalChat(
+            @PathVariable String chatroomId,
+            @RequestParam Long userId) {
+        try {
+            chatRoomService.clearMessagesForUser(chatroomId, userId);
 
-    /**
-     * Handles incoming "stop typing" events from users.
-     * Broadcasts a stop typing indicator to other users in the chat room.
-     * @param chatroomId The ID of the chat room.
-     * @param principal The authenticated user principal.
-     */
-    @MessageMapping("/chat.stoptyping/{chatroomId}")
-    public void handleStopTypingEvent(
-            @DestinationVariable String chatroomId,
-            Principal principal
-    ) {
-        User user = userService.getUserEntityByEmail(principal.getName());
-        TypingIndicatorMessage typingIndicator = new TypingIndicatorMessage(user.getId(), user.getUserName(), chatroomId, false);
-        messagingTemplate.convertAndSend("/topic/chat/" + chatroomId + "/typing", typingIndicator);
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Chat deleted successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Failed to delete chat");
+
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
     }
 }
