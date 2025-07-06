@@ -1,16 +1,18 @@
-gitignore
-# IntelliJ IDEA project files
+# IDE/project files
+.vscode/
 .idea/
 *.iml
 
-# Build artifacts (root level)
-target/
-
-# Build artifacts (Java backend)
+# Build artifacts
+/target/
 yaplab-app-backend/target/
-
-# Build artifacts (Node.js/frontend - if applicable)
+yaplab-app-frontend/node_modules/
 yaplab-app-frontend/dist/
 yaplab-app-frontend/build/
-yaplab-app-frontend/node_modules/
+
+# Local uploads
+uploads/
+
+# Do NOT ignore application.properties
+!yaplab-app-backend/src/main/resources/application.properties
 
