@@ -1,5 +1,6 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import config from './config.js';
 
 class WebSocketService {
     constructor() {
@@ -21,7 +22,7 @@ class WebSocketService {
         this.isPageVisible = true;
         this.networkOnline = navigator.onLine;
         this.connectionCheckInterval = null;
-        
+
         // Initialize monitoring
         this.initializeConnectionMonitoring();
     }
@@ -29,51 +30,51 @@ class WebSocketService {
     initializeConnectionMonitoring() {
         document.addEventListener('visibilitychange', () => {
             this.isPageVisible = !document.hidden;
-            
+
             if (this.isPageVisible && this.user && !this.connected) {
                 setTimeout(() => this.forceReconnect(), 1000);
             }
         });
-        
+
         window.addEventListener('online', () => {
             this.networkOnline = true;
             if (this.user && !this.connected) {
                 this.handleNetworkReconnect();
             }
         });
-        
+
         window.addEventListener('offline', () => {
             this.networkOnline = false;
         });
-        
+
         window.addEventListener('focus', () => {
             if (this.user && !this.connected) {
                 setTimeout(() => this.forceReconnect(), 500);
             }
         });
     }
-    
+
     isConnectionHealthy() {
         if (!this.connected || !this.client) return false;
-        
+
         if (!this.client.connected) {
             console.warn('Connection unhealthy: STOMP client not connected');
             return false;
         }
-        
+
         if (this.lastHeartbeat && Date.now() - this.lastHeartbeat > 30000) {
             console.warn('Connection unhealthy: no heartbeat for 30+ seconds');
             return false;
         }
-        
+
         return true;
     }
-    
+
     async forceReconnect() {
         if (this.connecting) return;
-        
+
         this.connected = false;
-        
+
         if (this.client) {
             try {
                 this.client.deactivate();
@@ -81,36 +82,47 @@ class WebSocketService {
                 console.error('Error deactivating client:', error);
             }
         }
-        
+
         this.reconnectAttempts = 0;
-        
+
         try {
             await this.connect(this.user);
         } catch (error) {
             console.error('Force reconnect failed:', error);
         }
     }
-    
+
     async handleNetworkReconnect() {
         if (!this.networkOnline || this.connecting) return;
-        
+
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         if (this.networkOnline && !this.connected) {
             this.forceReconnect();
         }
     }
-    
+
     startConnectionMonitoring() {
         this.stopConnectionMonitoring();
-        
         this.connectionCheckInterval = setInterval(() => {
-            if (this.user && this.isPageVisible && this.networkOnline && !this.connected) {
-                this.forceReconnect();
+            if (this.user && this.isPageVisible && this.networkOnline) {
+                // Check connection health more frequently
+                if (!this.connected && !this.connecting) {
+                    // Connection lost, attempting reconnect...
+                    this.forceReconnect();
+                } else if (this.connected && this.messageQueue.length > 0) {
+                    // Processing queued messages...
+                    this.processMessageQueue();
+                }
+                // Health check for existing connections
+                if (this.connected && !this.isConnectionHealthy()) {
+                    // Connection unhealthy, forcing reconnect...
+                    this.forceReconnect();
+                }
             }
-        }, 60000);
+        }, 10000); // Check every 10 seconds instead of 60
     }
-    
+
     // Stop connection monitoring
     stopConnectionMonitoring() {
         if (this.connectionCheckInterval) {
@@ -146,7 +158,7 @@ class WebSocketService {
         this.connectionCallbacks.add(callback);
         return () => this.connectionCallbacks.delete(callback);
     }
-    
+
     onDisconnectionChange(callback) {
         this.disconnectionCallbacks.add(callback);
         return () => this.disconnectionCallbacks.delete(callback);
@@ -183,7 +195,7 @@ class WebSocketService {
 
     return new Promise((resolve, reject) => {
         const authToken = localStorage.getItem('authToken');
-        
+
         if (!authToken) {
             console.error('No authentication token found');
             this.connecting = false;
@@ -191,24 +203,23 @@ class WebSocketService {
             reject(new Error('No authentication token'));
             return;
         }
-        
+
         try {
             this.client = new Client({
                 webSocketFactory: () => {
-                    const socketUrl = `http://localhost:8080/ws`;
-                    return new SockJS(socketUrl);
+                    return new SockJS(config.websocket.url);
                 },
-                
+
                 connectHeaders: {
                     'Authorization': `Bearer ${authToken}`,
                     'X-User-ID': user.id.toString(),
                     'X-User-Email': user.emailId
                 },
-                
-                heartbeatIncoming: 10000,
-                heartbeatOutgoing: 10000,
+
+                heartbeatIncoming: config.websocket.heartbeatIncoming,
+                heartbeatOutgoing: config.websocket.heartbeatOutgoing,
                 reconnectDelay: 0,
-                
+
                 onConnect: (frame) => {
     this.connected = true;
     this.connecting = false;
@@ -219,27 +230,27 @@ class WebSocketService {
     this.notifyConnectionChange('connected');
     resolve();
 },
-                    
+
                     onDisconnect: (frame) => {
                         this.connected = false;
                         this.connecting = false;
                         this.stopConnectionMonitoring();
                         this.clearSubscriptions();
                         this.notifyConnectionChange('disconnected');
-                        
+
                         if (this.user && localStorage.getItem('authToken') && this.reconnectAttempts < this.maxReconnectAttempts) {
                             this.handleReconnect();
                         }
                     },
-                    
+
                     onStompError: (frame) => {
                         console.error('WebSocket STOMP Error:', frame.headers.message || 'Connection failed');
                         this.connected = false;
                         this.connecting = false;
                         this.notifyConnectionChange('error');
-                        
+
                         if (frame.headers.message && (
-                            frame.headers.message.includes('Access Denied') || 
+                            frame.headers.message.includes('Access Denied') ||
                             frame.headers.message.includes('Unauthorized') ||
                             frame.headers.message.includes('403')
                         )) {
@@ -250,13 +261,13 @@ class WebSocketService {
                             reject(new Error(`WebSocket Error: ${frame.headers.message || 'Connection failed'}`));
                         }
                     },
-                    
+
                     onWebSocketError: (event) => {
                         console.error('WebSocket connection error:', event);
                         this.connected = false;
                         this.connecting = false;
                         this.notifyConnectionChange('error');
-                        
+
                         if (this.reconnectAttempts === 0) {
                             this.handleReconnect().catch(() => {
                                 reject(new Error('WebSocket connection failed'));
@@ -266,9 +277,9 @@ class WebSocketService {
                         }
                     }
                 });
-                
+
                 this.client.activate();
-                
+
                 // Connection timeout
                 setTimeout(() => {
                     if (this.connecting && !this.connected) {
@@ -279,7 +290,7 @@ class WebSocketService {
                         reject(new Error('Connection timeout'));
                     }
                 }, 15000);
-                
+
             } catch (error) {
                 console.error('Failed to create WebSocket connection:', error);
                 this.connecting = false;
@@ -288,7 +299,7 @@ class WebSocketService {
             }
         });
     }
-    
+
 setupUserSubscriptions() {
     if (!this.user) return;
 
@@ -307,12 +318,20 @@ setupUserSubscriptions() {
 
 
 joinRoom(roomId, chatData = null) {
+        // Ensure connection before joining room
+        if (!this.connected) {
+            // Not connected, attempting reconnect before joining room...
+            this.forceReconnect().then(() => {
+                this.joinRoom(roomId, chatData);
+            });
+            return;
+        }
     if (this.roomSubscriptions.has(roomId)) {
         return;
     }
 
-    this.send(`/app/chatroom.join/${roomId}`, { 
-        id: this.user.id, 
+    this.send(`/app/chatroom.join/${roomId}`, {
+        id: this.user.id,
         userName: this.user.userName,
         emailId: this.user.emailId
     });
@@ -320,7 +339,7 @@ joinRoom(roomId, chatData = null) {
     const subscriptions = [];
 
     const messagesSub = this.subscribe(`/room/${roomId}/messages`, (message) => {
-        console.log('📨 WebSocket: Room message received for room', roomId, ':', message);
+        // 📨 WebSocket: Room message received for room
         this.notifyEventListeners('roomMessage', { roomId, message });
     });
     subscriptions.push(messagesSub);
@@ -345,8 +364,8 @@ joinRoom(roomId, chatData = null) {
     leaveRoom(roomId) {
         const subscriptions = this.roomSubscriptions.get(roomId);
         if (subscriptions) {
-            this.send('/app/chatroom.leave', { 
-                id: this.user.id, 
+            this.send('/app/chatroom.leave', {
+                id: this.user.id,
                 userName: this.user.userName,
                 emailId: this.user.emailId
             });
@@ -363,7 +382,7 @@ joinRoom(roomId, chatData = null) {
     handleRoomEvent(roomId, event) {
         switch (event.type) {
             case 'MESSAGE_STATUS_UPDATE':
-            this.notifyEventListeners('messageStatus', { 
+            this.notifyEventListeners('messageStatus', {
                 roomId,
                 messageIds: event.messageIds,
                 status: event.status,
@@ -375,8 +394,8 @@ joinRoom(roomId, chatData = null) {
                 this.notifyEventListeners('roomEvent', { ...event, roomId });
                 break;
             case 'MESSAGE_EDITED':
-                this.notifyEventListeners('messageEdited', { 
-                    roomId, 
+                this.notifyEventListeners('messageEdited', {
+                    roomId,
                     messageId: event.messageId,
                     newContent: event.newContent,
                     edited: event.edited,
@@ -384,37 +403,37 @@ joinRoom(roomId, chatData = null) {
                 });
                 break;
             case 'MESSAGE_DELETED':
-                this.notifyEventListeners('messageDeleted', { 
-                    roomId, 
+                this.notifyEventListeners('messageDeleted', {
+                    roomId,
                     messageId: event.messageId,
                     softDeleted: event.softDeleted
                 });
                 break;
             case 'MULTIPLE_MESSAGES_DELETED':
-                this.notifyEventListeners('multipleMessagesDeleted', { 
-                    roomId, 
+                this.notifyEventListeners('multipleMessagesDeleted', {
+                    roomId,
                     messageIds: event.messageIds,
                     softDeleted: event.softDeleted,
                     userId: event.userId
                 });
                 break;
             case 'MESSAGES_DELETED':
-                this.notifyEventListeners('messagesDeleted', { 
-                    roomId, 
-                    messageIds: event.messageIds, 
-                    deletedBy: event.deletedBy 
+                this.notifyEventListeners('messagesDeleted', {
+                    roomId,
+                    messageIds: event.messageIds,
+                    deletedBy: event.deletedBy
                 });
                 break;
             case 'USER_JOINED':
-                this.notifyEventListeners('userJoined', { 
-                    roomId, 
-                    user: event.user 
+                this.notifyEventListeners('userJoined', {
+                    roomId,
+                    user: event.user
                 });
                 break;
             case 'USER_LEFT':
-                this.notifyEventListeners('userLeft', { 
-                    roomId, 
-                    user: event.user 
+                this.notifyEventListeners('userLeft', {
+                    roomId,
+                    user: event.user
                 });
                 break;
             default:
@@ -432,7 +451,7 @@ joinRoom(roomId, chatData = null) {
                 });
                 break;
             case 'USER_JOINED':
-                this.notifyEventListeners('groupMemberAdded', { 
+                this.notifyEventListeners('groupMemberAdded', {
                     groupId: parseInt(groupId),
                     userId: event.userId,
                     username: event.username,
@@ -440,7 +459,7 @@ joinRoom(roomId, chatData = null) {
                 });
                 break;
             case 'USER_LEFT':
-                this.notifyEventListeners('groupMemberRemoved', { 
+                this.notifyEventListeners('groupMemberRemoved', {
                     groupId: parseInt(groupId),
                     userId: event.userId,
                     username: event.username,
@@ -454,22 +473,25 @@ joinRoom(roomId, chatData = null) {
     }
 
     async handleReconnect() {
+        // Try token refresh before giving up
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('Max reconnection attempts reached');
-            this.notifyDisconnection('max_attempts_reached');
-            return Promise.reject(new Error('Max reconnection attempts reached'));
+            try {
+                console.log('Max attempts reached, trying token refresh...');
+                await this.refreshAuthToken();
+                this.reconnectAttempts = 0; // Reset attempts after token refresh
+            } catch (error) {
+                console.error('Token refresh failed:', error);
+                this.notifyDisconnection('auth_expired');
+                return Promise.reject(new Error('Authentication expired'));
+            }
         }
-
         if (!this.user || !localStorage.getItem('authToken')) {
             this.notifyDisconnection('no_auth');
             return Promise.reject(new Error('No authentication available'));
         }
-
         this.reconnectAttempts++;
-        const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-        
+        const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), 30000);
         this.notifyConnectionChange('reconnecting');
-        
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
                 try {
@@ -477,16 +499,37 @@ joinRoom(roomId, chatData = null) {
                     resolve();
                 } catch (error) {
                     console.error(`Reconnection attempt ${this.reconnectAttempts} failed:`, error);
-                    
                     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                        this.notifyDisconnection('max_attempts_reached');
-                        reject(error);
+                        this.handleReconnect().then(resolve).catch(reject);
                     } else {
                         this.handleReconnect().then(resolve).catch(reject);
                     }
                 }
             }, delay);
         });
+    }
+
+    async refreshAuthToken() {
+        try {
+            const response = await fetch('/api/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('authToken', data.token);
+                console.log('Token refreshed successfully');
+                return data.token;
+            } else {
+                throw new Error('Token refresh failed');
+            }
+        } catch (error) {
+            console.error('Token refresh error:', error);
+            throw error;
+        }
     }
 
     subscribe(destination, callback) {
@@ -504,14 +547,14 @@ joinRoom(roomId, chatData = null) {
                     } catch (parseError) {
                         parsedMessage = message.body;
                     }
-                    
+
                     callback(parsedMessage);
                 } catch (error) {
                     console.error(`Error handling message on ${destination}:`, error);
                     callback(message.body);
                 }
             });
-            
+
             this.subscriptions.set(destination, subscription);
             return subscription;
         } catch (error) {
@@ -523,21 +566,38 @@ joinRoom(roomId, chatData = null) {
     send(destination, message, headers = {}) {
         if (!this.connected) {
             this.messageQueue.push({ type: 'send', destination, message, headers });
-            return;
+            // Notify frontend that message is queued, not sent
+            this.notifyEventListeners('messageQueued', {
+                destination,
+                message,
+                status: 'queued'
+            });
+            // Try to reconnect immediately
+            if (!this.connecting && this.user) {
+                this.forceReconnect();
+            }
+            return false; // Indicate message wasn't sent
         }
-
         try {
             this.client.publish({
                 destination: destination,
                 body: JSON.stringify(message),
                 headers: headers
             });
+            // Notify successful send
+            this.notifyEventListeners('messageSent', {
+                destination,
+                message,
+                status: 'sent'
+            });
+            return true; // Message sent successfully
         } catch (error) {
-            console.error('Failed to send message to:', destination, error);
-            if (destination.includes('/app/messages')) {
-                console.warn('Critical message send failed, attempting reconnect...');
-                setTimeout(() => this.forceReconnect(), 100);
+            console.error('Failed to send message:', error);
+            // Try reconnection on send failure
+            if (!this.connecting && this.user) {
+                this.forceReconnect();
             }
+            return false;
         }
     }    // Enhanced messaging methods
     sendPersonalMessage(message) {

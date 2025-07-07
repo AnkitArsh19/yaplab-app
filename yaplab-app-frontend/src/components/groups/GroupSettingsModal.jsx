@@ -57,12 +57,11 @@ const GroupSettingsModal = ({
             const file = e.target.files[0];
             
             if (!file.type.startsWith('image/')) {
-                setError('Please select a valid image file');
+                setError('Only image files are allowed');
                 return;
             }
-            
             if (file.size > 5 * 1024 * 1024) {
-                setError('File size must be less than 5MB');
+                setError('Profile picture must be less than 5MB');
                 return;
             }
             

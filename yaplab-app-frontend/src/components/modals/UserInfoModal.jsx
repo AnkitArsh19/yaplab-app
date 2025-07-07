@@ -95,6 +95,7 @@ const UserInfoModal = ({
             }
             
             if (file.size > 5 * 1024 * 1024) {
+                showNotification('Profile picture must be less than 5MB', 'error');
                 return;
             }
 

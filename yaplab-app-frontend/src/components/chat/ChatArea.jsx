@@ -79,6 +79,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
     const [showGroupSettingsModal, setShowGroupSettingsModal] = useState(false);
     const messageAreaRef = useRef(null);
     const chatAvailable = !!(selectedChat && selectedChat.id);
+    const [messageStatusMap, setMessageStatusMap] = useState({});
 
     useEffect(() => {
         if (chatAvailable) {
@@ -188,13 +189,13 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             const unreadMessages = messages.filter(msg =>
                 msg.senderId !== currentUser.id &&
                 msg.messageStatus?.toUpperCase() === 'DELIVERED' &&
-                typeof msg.id === 'number' 
+                typeof msg.id === 'number'
             );
 
             if (unreadMessages.length > 0) {
                 const messageIds = unreadMessages.map(msg => msg.id);
                 websocketService.markMessagesAsRead(selectedChat.id, messageIds);
-               
+
                 setMessages(prev => prev.map(msg =>
                     messageIds.includes(msg.id)
                         ? { ...msg, messageStatus: 'read', readAt: new Date().toISOString() }
@@ -205,6 +206,22 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
 
         return () => clearTimeout(readTimer);
     }, [selectedChat?.id, wsConnectionState, currentUser?.id, messages]);
+
+    useEffect(() => {
+        // Listen for messageQueued and messageSent events for optimistic status updates
+        const unsubQueue = websocketService.addEventListener('messageQueued', ({ message }) => {
+            if (!message || !message.tempId) return;
+            setMessageStatusMap(prev => ({ ...prev, [message.tempId]: 'queued' }));
+        });
+        const unsubSent = websocketService.addEventListener('messageSent', ({ message }) => {
+            if (!message || !message.tempId) return;
+            setMessageStatusMap(prev => ({ ...prev, [message.tempId]: 'sent' }));
+        });
+        return () => {
+            unsubQueue();
+            unsubSent();
+        };
+    }, []);
 
     const handleRealTimeMessage = (incomingMessage) => {
         if (
@@ -258,7 +275,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
         }
 
         setMessages(prevMessages => {
-            const updatedMessages = prevMessages.map(msg => 
+            const updatedMessages = prevMessages.map(msg =>
                 messageIds.includes(msg.id)
                     ? updateMessageStatus(msg, update.status, update.readAt || update.deliveredAt)
                     : msg
@@ -268,20 +285,20 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
     };
 
     const handleMessageDeleted = (messageId) => {
-        setMessages(prevMessages => 
+        setMessages(prevMessages =>
             prevMessages.filter(msg => msg.id !== messageId)
         );
     };
 
     const handleMultipleMessagesDeleted = (messageIds) => {
         const deletedCount = messageIds.length;
-        
-        setMessages(prevMessages => 
+
+        setMessages(prevMessages =>
             prevMessages.filter(msg => !messageIds.includes(msg.id))
         );
-        
+
         showNotification(`${deletedCount} message${deletedCount > 1 ? 's' : ''} deleted`, 'info');
-        
+
         if (isSelectionMode) {
             setSelectedMessages(new Set());
             setIsSelectionMode(false);
@@ -291,17 +308,17 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
     const handleMessageEdited = (messageId, newContent, editTimestamp) => {
         setMessages(prevMessages => {
             const updatedMessages = prevMessages.map(msg =>
-                msg.id === messageId 
-                    ? { 
-                        ...msg, 
-                        content: newContent, 
-                        edited: true, 
+                msg.id === messageId
+                    ? {
+                        ...msg,
+                        content: newContent,
+                        edited: true,
                         editTimestamp: editTimestamp,
-                        isOptimistic: false 
-                    } 
+                        isOptimistic: false
+                    }
                     : msg
             ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            
+
             return updatedMessages;
         });
     };
@@ -329,12 +346,12 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
     const handleSendMessageOptimistic = async (messageContent) => {
         let messageText = '';
         let fileAttachment = null;
-        
+
         if (typeof messageContent === 'string') {
             messageText = messageContent;
         } else if (typeof messageContent === 'object') {
             messageText = messageContent.content || '';
-            
+
             if (messageContent.fileId) {
                 fileAttachment = {
                     fileId: messageContent.fileId,
@@ -355,10 +372,10 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
         }
         const isAudioMessage = fileAttachment && (fileAttachment.audioFile || fileAttachment.fileType?.startsWith('audio/'));
         const hasFileAttachment = !!fileAttachment;
-        
+
         if (!isAudioMessage && !hasFileAttachment && (!messageText.trim() || !chatAvailable || !currentUser?.id || isSending)) return;
         if ((isAudioMessage || hasFileAttachment) && (!chatAvailable || !currentUser?.id || isSending)) return;
-        
+
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const optimisticMessage = {
             id: tempId,
@@ -378,10 +395,10 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                 ...(fileAttachment.audioDuration && { audioDuration: fileAttachment.audioDuration })
             })
         };
-        
+
         setMessages(prevMessages => [...prevMessages, optimisticMessage].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)));
         setIsSending(true);
-        
+
         try {
             if (propOnSendMessage) {
                 await propOnSendMessage(selectedChat, messageText, fileAttachment);
@@ -410,7 +427,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
 
         try {
             setIsSending(true);
-            
+
             const replyData = {
                 senderId: currentUser.id,
                 content: content,
@@ -426,7 +443,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             };
 
             const response = await apiClient.post(`/messages/${replyingToMessage.id}/reply`, replyData);
-            
+
             if (response.ok) {
                 setReplyingToMessage(null);
                 if (propOnSendMessage) {
@@ -458,14 +475,14 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
 
         setMessages(prevMessages =>
             sortMessagesByTimestamp(prevMessages.map((msg) =>
-                msg.id === editingMessage.id 
-                    ? { 
-                        ...msg, 
-                        content: newContent.trim(), 
-                        edited: true, 
+                msg.id === editingMessage.id
+                    ? {
+                        ...msg,
+                        content: newContent.trim(),
+                        edited: true,
                         editTimestamp: new Date().toISOString(),
-                        isOptimistic: false 
-                    } 
+                        isOptimistic: false
+                    }
                     : msg
             ))
         );
@@ -565,7 +582,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
         const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
         if (messageElement) {
             messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
+
             const messageDiv = messageElement.closest('.message');
             if (messageDiv) {
                 messageDiv.classList.add('highlighted');
@@ -578,14 +595,14 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
 
     const handleBulkDelete = async () => {
         if (selectedMessages.size === 0) return;
-        
+
         try {
             const messageIds = Array.from(selectedMessages);
-            
+
             const selectedMessageObjects = messages.filter(msg => messageIds.includes(msg.id));
             const sentCount = selectedMessageObjects.filter(msg => msg.senderId === currentUser.id).length;
             const receivedCount = selectedMessageObjects.length - sentCount;
-            
+
             const response = await apiClient.request('/messages/multiple', {
                 method: 'DELETE',
                 body: JSON.stringify({
@@ -593,14 +610,14 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                     userId: currentUser.id
                 })
             });
-            
+
             if (response.ok) {
                 const deletedIds = await response.json();
-                
-                setMessages(prevMessages => 
+
+                setMessages(prevMessages =>
                     prevMessages.filter(msg => !deletedIds.includes(msg.id))
                 );
-                
+
                 let notificationMessage = '';
                 if (receivedCount > 0 && sentCount > 0) {
                     notificationMessage = `${sentCount} message${sentCount > 1 ? 's' : ''} deleted. Note: You can only delete your own messages.`;
@@ -609,9 +626,9 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                 } else {
                     notificationMessage = 'No messages deleted. You can only delete your own messages.';
                 }
-                
+
                 showNotification(notificationMessage, sentCount > 0 ? 'success' : 'warning');
-                
+
                 handleExitSelectionMode();
             } else {
                 throw new Error(`Delete failed with status: ${response.status}`);
@@ -631,9 +648,9 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
 
     const handleForwardMessages = async (selectedChatIds) => {
         if (!selectedChatIds.length) return;
-        
-        const messagesToForward = messageToForward ? 
-            [messageToForward] : 
+
+        const messagesToForward = messageToForward ?
+            [messageToForward] :
             Array.from(selectedMessages)
                 .map(id => messages.find(msg => msg.id === id))
                 .filter(Boolean)
@@ -644,7 +661,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
 
         try {
             await Promise.all(
-                selectedChatIds.map(chatId => 
+                selectedChatIds.map(chatId =>
                     messageToForward ?
                         apiClient.forwardMessage(messageToForward.id, chatId, currentUser.id) :
                         apiClient.forwardMultipleMessages(messageIds, chatId, currentUser.id)
@@ -815,7 +832,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             await apiClient.delete(`/groups/removeuser?userId=${currentUser.id}&groupId=${selectedChat.groupId}`);
             showNotification('Left group successfully', 'success');
             setConfirmationModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
-            
+
             if (onChatRemoved) {
                 onChatRemoved(selectedChat.id, 'group');
             }
@@ -847,13 +864,13 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             const response = await apiClient.getGroupDetails(groupId);
             if (response.ok) {
                 const updatedGroup = await response.json();
-                
+
                 if (selectedChat && selectedChat.groupId === groupId) {
                     let participants = [];
-                    
+
                     if (updatedGroup.userNames && updatedGroup.userNames.length > 0) {
                         const existingParticipants = selectedChat.participants || [];
-                        
+
                         participants = updatedGroup.userNames.map((userName, index) => {
                             const existingParticipant = existingParticipants.find(p => p.userName === userName);
                             if (existingParticipant) {
@@ -868,7 +885,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                             }
                         });
                     }
-                    
+
                     const updatedChat = {
                         ...selectedChat,
                         participants: participants,
@@ -876,7 +893,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                         profilePictureUrl: updatedGroup.profilePictureUrl || selectedChat.profilePictureUrl,
                         profilePicture: updatedGroup.profilePictureUrl || selectedChat.profilePicture
                     };
-                    
+
                     if (onChatUpdated) {
                         onChatUpdated(selectedChat.id, updatedChat);
                     }
@@ -894,13 +911,13 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             showNotification('Group ID not found', 'error');
             return;
         }
-        
+
         try {
             let success = true;
-            
+
             if (updatedData.name && updatedData.name !== selectedChat.group?.name) {
-                const nameResponse = await apiClient.updateGroupName(selectedChat.groupId, 
-                    { name: updatedData.name }, 
+                const nameResponse = await apiClient.updateGroupName(selectedChat.groupId,
+                    { name: updatedData.name },
                     currentUser.id
                 );
                 if (!nameResponse.ok) {
@@ -910,7 +927,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                     showNotification(errorData.message || 'Failed to update group name', 'error');
                 }
             }
-            
+
             if (updatedData.avatar) {
                 const avatarResponse = await apiClient.uploadGroupProfilePicture(selectedChat.groupId, updatedData.avatar);
                 if (!avatarResponse.ok) {
@@ -920,7 +937,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                     showNotification(errorData.message || 'Failed to update profile picture', 'error');
                 }
             }
-            
+
             if (success) {
                 showNotification('Group updated successfully', 'success');
                 await refreshGroupDetails(selectedChat.groupId);
@@ -934,7 +951,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
     const handleGroupOperationError = async (error, operation, refreshGroup = true) => {
         console.error(`Error ${operation}:`, error);
         showNotification(`Failed to ${operation}: ${error.message || 'Unknown error'}`, 'error');
-        
+
         if (refreshGroup && selectedChat?.groupId) {
             try {
                 await refreshGroupDetails(selectedChat.groupId);
@@ -956,22 +973,22 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             showNotification('Group ID not found', 'error');
             return;
         }
-        
+
         try {
             const userIds = Array.isArray(selectedUserIds) ? selectedUserIds : [selectedUserIds];
             let addedCount = 0;
             let lastError = null;
-            
+
             for (const userId of userIds) {
                 const numericUserId = Number(userId);
                 const numericGroupId = Number(selectedChat.groupId);
-                
+
                 if (isNaN(numericUserId) || isNaN(numericGroupId)) {
                     lastError = `Invalid ID format for user ${userId}`;
                     console.error('Invalid user ID or group ID:', { userId, groupId: selectedChat.groupId });
                     continue;
                 }
-                
+
                 try {
                     const response = await apiClient.addUserToGroup(numericUserId, numericGroupId);
                     if (response.ok) {
@@ -984,7 +1001,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                     lastError = `Failed to add user ${numericUserId}: ${userError.message || ''}`;
                 }
             }
-            
+
             if (addedCount === userIds.length) {
                 await handleMemberOperationSuccess(formatNotificationMessage(addedCount, 'member', 'added successfully'));
             } else if (addedCount > 0) {
@@ -1003,7 +1020,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             showNotification('Group ID not found', 'error');
             return;
         }
-        
+
         try {
             const response = await apiClient.removeUserFromGroup(memberId, selectedChat.groupId);
             if (response.ok) {
@@ -1028,7 +1045,7 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
             </div>
         );
     }
-    
+
     const canSendMessage = selectedChat?.id && currentUser?.id;
     const showDisconnectedPlaceholder = wsConnectionState === 'disconnected' || wsConnectionState === 'reconnecting';
 
@@ -1049,7 +1066,13 @@ function ChatArea({ selectedChat, currentUser, onSendMessage: propOnSendMessage,
                 onChatMenuAction={handleChatMenuAction}
             />
             <MessageArea
-                messages={messages}
+                messages={messages.map(msg => {
+                    // Attach status from map if available
+                    if (msg.tempId && messageStatusMap[msg.tempId]) {
+                        return { ...msg, messageStatus: messageStatusMap[msg.tempId] };
+                    }
+                    return msg;
+                })}
                 loading={isLoading}
                 currentUser={currentUser}
                 typingUsers={typingUsers}

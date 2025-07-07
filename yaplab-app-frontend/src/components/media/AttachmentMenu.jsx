@@ -114,7 +114,6 @@ const menuItems = [
 const backgroundVariants = {
     open: (height = 1000) => ({
         clipPath: `circle(${height * 2 + 200}px at 50% calc(100% + 20px))`,
-        backgroundColor: 'rgba(255, 240, 230, 1)',
         transition: {
             type: "spring",
             stiffness: 20,
@@ -124,9 +123,8 @@ const backgroundVariants = {
     }),
     closed: {
         clipPath: "circle(0px at 50% calc(100% + 20px))",
-        backgroundColor: 'rgba(255, 240, 230, 0)',
         transition: {
-            delay: 0.2, 
+            delay: 0.2,
             type: "spring",
             stiffness: 400,
             damping: 50,
@@ -144,8 +142,8 @@ const navVariants = {
 };
 
 const Navigation = ({ onItemClick }) => (
-    <motion.ul 
-        className="attachment-list" 
+    <motion.ul
+        className="attachment-list"
         variants={navVariants}
         initial="closed"
         animate="open"
@@ -155,11 +153,11 @@ const Navigation = ({ onItemClick }) => (
             <p className="attachment-limit-text">Upload files up to 50MB</p>
         </div>
         {menuItems.map((item, i) => (
-            <MenuItem 
+            <MenuItem
                 key={item.id}
-                i={i} 
+                i={i}
                 item={item}
-                onClick={() => onItemClick(item.action)} 
+                onClick={() => onItemClick(item.action)}
             />
         ))}
     </motion.ul>
@@ -168,14 +166,14 @@ const Navigation = ({ onItemClick }) => (
 const itemVariants = {
     open: {
         y: 0,
-        opacity: 1,
+        opacity: 1, // Always visible
         transition: {
             y: { stiffness: 1000, velocity: -100 },
         },
     },
     closed: {
         y: 50,
-        opacity: 0,
+        opacity: 1, // Always visible
         transition: {
             y: { stiffness: 1000 },
         },
