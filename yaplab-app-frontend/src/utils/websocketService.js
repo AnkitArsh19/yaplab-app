@@ -511,18 +511,23 @@ joinRoom(roomId, chatData = null) {
 
     async refreshAuthToken() {
         try {
-            const response = await fetch('/api/auth/refresh', {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) {
+                throw new Error('No refresh token available');
+            }
+
+            const response = await fetch('http://localhost:8080/auth/refresh', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ refreshToken })
             });
             if (response.ok) {
                 const data = await response.json();
-                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('authToken', data.accessToken);
                 console.log('Token refreshed successfully');
-                return data.token;
+                return data.accessToken;
             } else {
                 throw new Error('Token refresh failed');
             }

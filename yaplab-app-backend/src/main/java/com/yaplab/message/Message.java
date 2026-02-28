@@ -58,8 +58,12 @@ public class Message {
 
     /**
      * Content of the message in text format.
+     * Encrypted at rest using AES-256 via MessageContentConverter.
+     * In the database: stored as encrypted ciphertext.
+     * In Java: always plaintext (converter handles it transparently).
      */
-    @Column(nullable = true, length = 2000)
+    @Convert(converter = MessageContentConverter.class)
+    @Column(nullable = true, length = 5000)
     private String content;
 
     /**

@@ -48,26 +48,26 @@ function App() {
     }, []);
 
     const setupWebSocketListeners = () => {
-    // Set up connection status listener
-    const unsubscribeConnection = websocketService.onConnectionChange((status) => {
-        setWsConnectionState(status);
-    });
+        // Set up connection status listener
+        const unsubscribeConnection = websocketService.onConnectionChange((status) => {
+            setWsConnectionState(status);
+        });
 
-    // Set up disconnection listener for auth errors and max attempts
-    const unsubscribeDisconnection = websocketService.onDisconnectionChange((reason) => {
-        if (reason === 'auth_error') {
-            setWsConnectionState('auth_error');
-        } else if (reason === 'max_attempts_reached') {
-            setWsConnectionState('max_attempts_reached');
-        }
-    });
+        // Set up disconnection listener for auth errors and max attempts
+        const unsubscribeDisconnection = websocketService.onDisconnectionChange((reason) => {
+            if (reason === 'auth_error' || reason === 'auth_expired') {
+                setWsConnectionState('auth_error');
+            } else if (reason === 'max_attempts_reached' || reason === 'no_auth') {
+                setWsConnectionState('max_attempts_reached');
+            }
+        });
 
-    // Store cleanup functions
-    window.wsCleanup = () => {
-        unsubscribeConnection();
-        unsubscribeDisconnection();
+        // Store cleanup functions
+        window.wsCleanup = () => {
+            unsubscribeConnection();
+            unsubscribeDisconnection();
+        };
     };
-};
 
     const connectWebSocket = async (userData) => {
         try {

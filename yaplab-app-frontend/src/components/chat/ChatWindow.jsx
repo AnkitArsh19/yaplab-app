@@ -20,19 +20,40 @@ function ChatWindow({ user, onLogout, wsConnectionState }) {
     const [selectedContactsForGroup, setSelectedContactsForGroup] = useState([]);
     const [notification, setNotification] = useState(null);
 
+    // Effect 1: Load chats when user becomes available (runs once per user)
     useEffect(() => {
         if (user?.id) {
             loadUserChats();
-            
-            if (wsConnectionState === 'connected') {
-                setupWebSocketSubscriptions();
-            }
         } else {
             setLoading(false);
             setChats([]);
         }
-    }, [user?.id, wsConnectionState]);
-    
+    }, [user?.id]);
+
+    // Effect 2: Set up WebSocket event subscriptions when connection is ready
+    useEffect(() => {
+        if (user?.id && wsConnectionState === 'connected') {
+            setupWebSocketSubscriptions();
+        }
+
+        return () => {
+            if (window.wsSubscriptionCleanup) {
+                window.wsSubscriptionCleanup();
+                delete window.wsSubscriptionCleanup;
+            }
+        };
+    }, [wsConnectionState]);
+
+    // Effect 3: Join group rooms when both chats are loaded and WS is connected
+    useEffect(() => {
+        if (wsConnectionState === 'connected' && chats.length > 0) {
+            chats.forEach(chat => {
+                if (chat.chatRoomType === 'GROUP') {
+                    websocketService.joinRoom(chat.id, chat);
+                }
+            });
+        }
+    }, [wsConnectionState, chats.length]);
 
     useEffect(() => {
         if (wsConnectionState === 'max_attempts_reached' || wsConnectionState === 'auth_error') {
@@ -41,7 +62,6 @@ function ChatWindow({ user, onLogout, wsConnectionState }) {
     }, [wsConnectionState, onLogout]);
 
     const setupWebSocketSubscriptions = async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
         const unsubscribePersonal = websocketService.addEventListener('personalMessage', handleIncomingMessage);
         const unsubscribeRoomMessage = websocketService.addEventListener('roomMessage', (data) => {
             handleIncomingMessage(data.message);
@@ -114,12 +134,6 @@ function ChatWindow({ user, onLogout, wsConnectionState }) {
                 console.error('Fallback status fetch failed:', fallbackError);
             }
         }
-
-        chats.forEach(chat => {
-            if (chat.chatRoomType === 'GROUP') {
-                websocketService.joinRoom(chat.id);
-            }
-        });
 
         window.wsSubscriptionCleanup = () => {
             unsubscribePersonal();
