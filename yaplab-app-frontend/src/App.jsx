@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './components/auth/AuthPage';
 import ChatWindow from './components/chat/ChatWindow';
 import EmailChangeConfirmation from './components/modals/EmailChangeConfirmation';
+import DeveloperProfile from './components/DeveloperProfile';
 import apiClient from './utils/apiClient.js';
 import websocketService from './utils/websocketService.js';
 
@@ -152,6 +153,10 @@ function App() {
                 <Route 
                     path="/auth/confirm-email-change" 
                     element={<EmailChangeConfirmation />} 
+                />
+                <Route
+                    path="/developer"
+                    element={<DeveloperProfile />}
                 />
             </Routes>
         </div>

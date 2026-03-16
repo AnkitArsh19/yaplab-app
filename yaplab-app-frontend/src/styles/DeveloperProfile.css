@@ -1,0 +1,70 @@
+@font-face {
+    font-family: "Regular";
+    src: url("/src/assets/fonts/Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+  
+
+
+.dev-profile-form {
+    width: 400px;
+    padding: 30px;
+    align-items: center;
+}
+
+.profile-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #174249;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+}
+
+.dev-heading {
+    margin-top: 0;
+    text-align: center;
+}
+
+.profile-details {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(162, 127, 104, 0.3);
+    padding-bottom: 8px;
+}
+
+.detail-label {
+    color: #174249;
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.detail-value {
+    color: #254448;
+    font-weight: 500;
+    font-size: 1.1em;
+    text-align: right;
+}
+
+.dev-footer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.back-button {
+    width: 120px;
+}
